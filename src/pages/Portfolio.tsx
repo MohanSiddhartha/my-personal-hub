@@ -77,7 +77,7 @@ const PortfolioPage = () => {
     toast({ title: "Skill added" });
   };
 
-  const deleteItem = async (table: string, id: string) => {
+  const deleteItem = async (table: "experiences" | "portfolio_projects" | "education" | "skills", id: string) => {
     await supabase.from(table).delete().eq("id", id);
     fetchAll();
     toast({ title: "Deleted" });
