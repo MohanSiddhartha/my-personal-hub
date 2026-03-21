@@ -1,9 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
-import { Brain, Clock, CheckCircle2, XCircle, RotateCcw, ChevronRight } from "lucide-react";
+import { Brain, Clock, CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollReveal } from "@/components/ScrollReveal";
+import { CyberCard } from "@/components/CyberCard";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Question {
   id: string;
@@ -16,102 +20,21 @@ interface Question {
 }
 
 const QUESTIONS: Question[] = [
-  {
-    id: "1",
-    question: "What is the purpose of Angular's NgZone?",
-    options: [
-      "Manages component lifecycle",
-      "Handles change detection triggers",
-      "Provides dependency injection",
-      "Manages routing guards",
-    ],
-    correct: 1,
-    difficulty: "intermediate",
-    category: "Angular",
-    explanation: "NgZone helps Angular know when to trigger change detection by patching async APIs.",
-  },
-  {
-    id: "2",
-    question: "In SQL, what does COALESCE do?",
-    options: [
-      "Joins two tables",
-      "Returns the first non-null value",
-      "Counts distinct values",
-      "Creates an index",
-    ],
-    correct: 1,
-    difficulty: "basic",
-    category: "SQL",
-    explanation: "COALESCE returns the first non-null expression among its arguments.",
-  },
-  {
-    id: "3",
-    question: "What is middleware in .NET?",
-    options: [
-      "A database ORM",
-      "Software in the request/response pipeline",
-      "A testing framework",
-      "A deployment tool",
-    ],
-    correct: 1,
-    difficulty: "basic",
-    category: ".NET",
-    explanation: "Middleware is software assembled into a pipeline to handle requests and responses.",
-  },
-  {
-    id: "4",
-    question: "What does the 'trackBy' function do in Angular *ngFor?",
-    options: [
-      "Tracks HTTP requests",
-      "Optimizes DOM re-rendering by identity",
-      "Monitors component state",
-      "Logs performance metrics",
-    ],
-    correct: 1,
-    difficulty: "intermediate",
-    category: "Angular",
-    explanation: "trackBy helps Angular identify items to minimize DOM manipulation during list re-renders.",
-  },
-  {
-    id: "5",
-    question: "What is a CTE in SQL?",
-    options: [
-      "Cascading Table Expression",
-      "Common Table Expression",
-      "Computed Transaction Entity",
-      "Cross-Table Evaluation",
-    ],
-    correct: 1,
-    difficulty: "intermediate",
-    category: "SQL",
-    explanation: "A CTE (Common Table Expression) defines a temporary result set referenced within a query.",
-  },
-  {
-    id: "6",
-    question: "What pattern does Angular's HttpInterceptor implement?",
-    options: [
-      "Observer pattern",
-      "Chain of responsibility",
-      "Singleton pattern",
-      "Factory pattern",
-    ],
-    correct: 1,
-    difficulty: "pro",
-    category: "Angular",
-    explanation: "Interceptors form a chain where each can transform or handle the request/response.",
-  },
+  { id: "1", question: "What is the purpose of Angular's NgZone?", options: ["Manages component lifecycle", "Handles change detection triggers", "Provides dependency injection", "Manages routing guards"], correct: 1, difficulty: "intermediate", category: "Angular", explanation: "NgZone helps Angular know when to trigger change detection by patching async APIs." },
+  { id: "2", question: "In SQL, what does COALESCE do?", options: ["Joins two tables", "Returns the first non-null value", "Counts distinct values", "Creates an index"], correct: 1, difficulty: "basic", category: "SQL", explanation: "COALESCE returns the first non-null expression among its arguments." },
+  { id: "3", question: "What is middleware in .NET?", options: ["A database ORM", "Software in the request/response pipeline", "A testing framework", "A deployment tool"], correct: 1, difficulty: "basic", category: ".NET", explanation: "Middleware is software assembled into a pipeline to handle requests and responses." },
+  { id: "4", question: "What does 'trackBy' do in Angular *ngFor?", options: ["Tracks HTTP requests", "Optimizes DOM re-rendering by identity", "Monitors component state", "Logs performance metrics"], correct: 1, difficulty: "intermediate", category: "Angular", explanation: "trackBy helps Angular identify items to minimize DOM manipulation during list re-renders." },
+  { id: "5", question: "What is a CTE in SQL?", options: ["Cascading Table Expression", "Common Table Expression", "Computed Transaction Entity", "Cross-Table Evaluation"], correct: 1, difficulty: "intermediate", category: "SQL", explanation: "A CTE (Common Table Expression) defines a temporary result set referenced within a query." },
+  { id: "6", question: "What pattern does Angular's HttpInterceptor implement?", options: ["Observer pattern", "Chain of responsibility", "Singleton pattern", "Factory pattern"], correct: 1, difficulty: "pro", category: "Angular", explanation: "Interceptors form a chain where each can transform or handle the request/response." },
 ];
 
 const CATEGORIES = ["All", "Angular", "SQL", ".NET"];
 const DIFFICULTIES = ["all", "basic", "intermediate", "pro"] as const;
-
-const difficultyColors = {
-  basic: "text-primary",
-  intermediate: "text-amber",
-  pro: "text-rose",
-};
+const difficultyColors = { basic: "text-primary", intermediate: "text-amber", pro: "text-rose" };
 
 const QuizPage = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedDifficulty, setSelectedDifficulty] = useState<typeof DIFFICULTIES[number]>("all");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -122,6 +45,7 @@ const QuizPage = () => {
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
   const [quizStarted, setQuizStarted] = useState(false);
+  const [pastResults, setPastResults] = useState<any[]>([]);
 
   const filteredQuestions = QUESTIONS.filter((q) => {
     const matchCat = selectedCategory === "All" || q.category === selectedCategory;
@@ -131,12 +55,22 @@ const QuizPage = () => {
 
   const currentQ = filteredQuestions[currentIndex];
 
+  const fetchResults = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("quiz_results")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("completed_at", { ascending: false })
+      .limit(10);
+    setPastResults(data || []);
+  };
+
+  useEffect(() => { fetchResults(); }, [user]);
+
   useEffect(() => {
     if (!timerEnabled || !quizStarted || selected !== null) return;
-    if (timeLeft <= 0) {
-      handleAnswer(-1);
-      return;
-    }
+    if (timeLeft <= 0) { handleAnswer(-1); return; }
     const t = setTimeout(() => setTimeLeft((p) => p - 1), 1000);
     return () => clearTimeout(t);
   }, [timeLeft, timerEnabled, quizStarted, selected]);
@@ -150,10 +84,29 @@ const QuizPage = () => {
   };
 
   const nextQuestion = () => {
+    if (currentIndex >= filteredQuestions.length - 1) {
+      // Quiz complete — save result
+      saveResult();
+      return;
+    }
     setSelected(null);
     setShowExplanation(false);
     setTimeLeft(30);
-    setCurrentIndex((p) => (p + 1) % filteredQuestions.length);
+    setCurrentIndex((p) => p + 1);
+  };
+
+  const saveResult = async () => {
+    if (!user) return;
+    await supabase.from("quiz_results").insert({
+      user_id: user.id,
+      category: selectedCategory,
+      difficulty: selectedDifficulty,
+      score: score + (selected === currentQ?.correct ? 1 : 0),
+      total: filteredQuestions.length,
+    });
+    toast({ title: "Quiz complete!", description: `Score: ${score}/${filteredQuestions.length}` });
+    fetchResults();
+    resetQuiz();
   };
 
   const resetQuiz = () => {
@@ -177,36 +130,57 @@ const QuizPage = () => {
         </ScrollReveal>
 
         <ScrollReveal delay={100}>
-          <div className="rounded-lg border border-border/50 bg-card p-6 space-y-5">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Category</p>
-              <div className="flex gap-2 flex-wrap">
-                {CATEGORIES.map((c) => (
-                  <Badge key={c} variant={selectedCategory === c ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedCategory(c)}>{c}</Badge>
-                ))}
+          <CyberCard glowColor="amber">
+            <div className="space-y-5">
+              <div>
+                <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">Category</p>
+                <div className="flex gap-2 flex-wrap">
+                  {CATEGORIES.map((c) => (
+                    <Badge key={c} variant={selectedCategory === c ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedCategory(c)}>{c}</Badge>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Difficulty</p>
-              <div className="flex gap-2 flex-wrap">
-                {DIFFICULTIES.map((d) => (
-                  <Badge key={d} variant={selectedDifficulty === d ? "default" : "outline"} className="cursor-pointer capitalize" onClick={() => setSelectedDifficulty(d)}>{d}</Badge>
-                ))}
+              <div>
+                <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">Difficulty</p>
+                <div className="flex gap-2 flex-wrap">
+                  {DIFFICULTIES.map((d) => (
+                    <Badge key={d} variant={selectedDifficulty === d ? "default" : "outline"} className="cursor-pointer capitalize" onClick={() => setSelectedDifficulty(d)}>{d}</Badge>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" checked={timerEnabled} onChange={(e) => setTimerEnabled(e.target.checked)} className="rounded" />
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                30s timer per question
+                <span>30s timer per question</span>
               </label>
+              <p className="text-sm text-muted-foreground font-mono">{filteredQuestions.length} questions available</p>
+              <Button variant="glow" className="w-full" onClick={() => setQuizStarted(true)} disabled={filteredQuestions.length === 0}>
+                Start Quiz <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-            <p className="text-sm text-muted-foreground">{filteredQuestions.length} questions available</p>
-            <Button variant="glow" className="w-full" onClick={() => setQuizStarted(true)} disabled={filteredQuestions.length === 0}>
-              Start Quiz <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          </CyberCard>
         </ScrollReveal>
+
+        {pastResults.length > 0 && (
+          <ScrollReveal delay={200}>
+            <div>
+              <h2 className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-amber" /> Recent Results
+              </h2>
+              <div className="space-y-2">
+                {pastResults.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between rounded-lg border border-border/20 bg-card/40 p-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">{r.category}</Badge>
+                      <span className="text-xs text-muted-foreground capitalize">{r.difficulty}</span>
+                    </div>
+                    <span className="font-mono text-primary">{r.score}/{r.total}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ScrollReveal>
+        )}
       </div>
     );
   }
@@ -232,67 +206,58 @@ const QuizPage = () => {
         </div>
         <div className="flex items-center gap-3">
           {timerEnabled && (
-            <span className={cn("font-mono text-lg font-bold", timeLeft <= 10 ? "text-destructive" : "text-muted-foreground")}>
-              {timeLeft}s
-            </span>
+            <span className={cn("font-mono text-lg font-bold", timeLeft <= 10 ? "text-destructive" : "text-muted-foreground")}>{timeLeft}s</span>
           )}
-          <Button variant="ghost" size="icon" onClick={resetQuiz}>
-            <RotateCcw className="h-4 w-4" />
-          </Button>
+          <Button variant="ghost" size="icon" onClick={resetQuiz}><RotateCcw className="h-4 w-4" /></Button>
         </div>
       </div>
 
-      <div className="rounded-lg border border-border/50 bg-card p-6 space-y-5">
-        <div className="flex items-center gap-2 mb-1">
-          <Badge variant="secondary">{currentQ.category}</Badge>
-          <span className={cn("text-xs font-medium capitalize", difficultyColors[currentQ.difficulty])}>
-            {currentQ.difficulty}
-          </span>
-        </div>
-        <h2 className="text-lg font-semibold leading-relaxed">{currentQ.question}</h2>
-
-        <div className="space-y-2">
-          {currentQ.options.map((opt, i) => {
-            const isCorrect = i === currentQ.correct;
-            const isSelected = i === selected;
-            return (
-              <button
-                key={i}
-                onClick={() => handleAnswer(i)}
-                disabled={selected !== null}
-                className={cn(
-                  "w-full text-left rounded-lg border p-3.5 text-sm transition-all duration-200",
-                  selected === null
-                    ? "border-border/50 bg-secondary/30 hover:bg-secondary hover:border-border cursor-pointer active:scale-[0.98]"
-                    : isCorrect
-                    ? "border-primary/50 bg-primary/10 text-primary"
-                    : isSelected
-                    ? "border-destructive/50 bg-destructive/10 text-destructive"
-                    : "border-border/30 opacity-50"
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  {selected !== null && isCorrect && <CheckCircle2 className="h-4 w-4 shrink-0" />}
-                  {selected !== null && isSelected && !isCorrect && <XCircle className="h-4 w-4 shrink-0" />}
-                  {opt}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {showExplanation && (
-          <div className="rounded-md bg-muted/50 border border-border/30 p-3 text-sm text-muted-foreground">
-            💡 {currentQ.explanation}
+      <CyberCard glowColor="amber">
+        <div className="space-y-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant="secondary">{currentQ.category}</Badge>
+            <span className={cn("text-xs font-medium capitalize", difficultyColors[currentQ.difficulty])}>{currentQ.difficulty}</span>
           </div>
-        )}
+          <h2 className="text-lg font-semibold leading-relaxed">{currentQ.question}</h2>
 
-        {selected !== null && (
-          <Button variant="glow" className="w-full" onClick={nextQuestion}>
-            Next Question <ChevronRight className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+          <div className="space-y-2">
+            {currentQ.options.map((opt, i) => {
+              const isCorrect = i === currentQ.correct;
+              const isSelected = i === selected;
+              return (
+                <button key={i} onClick={() => handleAnswer(i)} disabled={selected !== null}
+                  className={cn(
+                    "w-full text-left rounded-lg border p-3.5 text-sm transition-all duration-200",
+                    selected === null
+                      ? "border-border/30 bg-secondary/20 hover:bg-secondary hover:border-border cursor-pointer active:scale-[0.98]"
+                      : isCorrect ? "border-primary/50 bg-primary/10 text-primary"
+                      : isSelected ? "border-destructive/50 bg-destructive/10 text-destructive"
+                      : "border-border/20 opacity-40"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    {selected !== null && isCorrect && <CheckCircle2 className="h-4 w-4 shrink-0" />}
+                    {selected !== null && isSelected && !isCorrect && <XCircle className="h-4 w-4 shrink-0" />}
+                    {opt}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {showExplanation && (
+            <div className="rounded-lg bg-muted/30 border border-border/20 p-3 text-sm text-muted-foreground">
+              💡 {currentQ.explanation}
+            </div>
+          )}
+
+          {selected !== null && (
+            <Button variant="glow" className="w-full" onClick={nextQuestion}>
+              {currentIndex >= filteredQuestions.length - 1 ? "Finish Quiz" : "Next Question"} <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </CyberCard>
     </div>
   );
 };
