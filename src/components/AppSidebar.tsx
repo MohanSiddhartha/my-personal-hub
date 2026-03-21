@@ -6,9 +6,11 @@ import {
   Brain,
   Terminal,
   Hexagon,
+  LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +21,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -34,6 +37,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { profile, signOut } = useAuth();
 
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
@@ -62,7 +66,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item, i) => (
+              {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -77,7 +81,7 @@ export function AppSidebar() {
                     >
                       <item.icon
                         className={`h-4 w-4 transition-all duration-300 ${
-                          isActive(item.url) ? item.color : "text-muted-foreground group-hover/link:" + item.color
+                          isActive(item.url) ? item.color : "text-muted-foreground"
                         }`}
                       />
                       {!collapsed && <span>{item.title}</span>}
@@ -91,22 +95,24 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+      </SidebarContent>
 
-        {/* Version tag */}
-        {!collapsed && (
-          <div className="mt-auto p-4">
-            <div className="rounded-lg border border-border/30 bg-card/40 p-3">
-              <p className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-wider">
-                DevVault v0.1.0
-              </p>
-              <div className="mt-1 flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary" style={{ animation: "breathe 2s ease-in-out infinite" }} />
-                <span className="text-[10px] font-mono text-primary/70">All systems go</span>
-              </div>
-            </div>
+      <SidebarFooter className="p-3">
+        {!collapsed && profile && (
+          <div className="rounded-lg border border-border/30 bg-card/40 p-3 mb-2">
+            <p className="text-sm font-medium text-foreground truncate">{profile.display_name || "Developer"}</p>
+            <p className="text-[10px] font-mono text-muted-foreground/60 mt-0.5">DevVault v0.1.0</p>
           </div>
         )}
-      </SidebarContent>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Sign Out" onClick={signOut}>
+              <LogOut className="h-4 w-4 text-muted-foreground" />
+              {!collapsed && <span className="text-muted-foreground">Sign Out</span>}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
