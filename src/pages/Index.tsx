@@ -1,6 +1,8 @@
-import { StickyNote, Code2, Briefcase, Brain, Clock, Zap } from "lucide-react";
+import { StickyNote, Code2, Briefcase, Brain, Clock, Zap, ArrowRight, Sparkles, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { DashboardCard } from "@/components/DashboardCard";
+import { CyberCard } from "@/components/CyberCard";
+import { GlitchText } from "@/components/GlitchText";
+import { StatusIndicator } from "@/components/StatusIndicator";
 import { ScrollReveal } from "@/components/ScrollReveal";
 
 const Dashboard = () => {
@@ -9,39 +11,60 @@ const Dashboard = () => {
   const greeting =
     hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
+  const stats = [
+    { label: "Notes", value: "—", icon: StickyNote, color: "primary" as const },
+    { label: "Snippets", value: "—", icon: Code2, color: "cyan" as const },
+    { label: "Projects", value: "—", icon: Briefcase, color: "accent" as const },
+    { label: "Quizzes", value: "—", icon: Brain, color: "amber" as const },
+  ];
+
+  const colorClasses = {
+    primary: "text-primary",
+    cyan: "text-cyan",
+    accent: "text-accent",
+    amber: "text-amber",
+    rose: "text-rose",
+  };
+
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-10 relative">
       {/* Hero */}
       <ScrollReveal>
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">
-            {greeting}, <span className="text-gradient-primary">Developer</span>
-          </h1>
-          <p className="text-muted-foreground">
-            Your personal command center. Build, learn, grow.
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 mb-4">
+            <StatusIndicator status="online" label="online" />
+            <span className="text-xs font-mono text-muted-foreground/40">|</span>
+            <span className="text-xs font-mono text-muted-foreground/60">
+              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+            </span>
+          </div>
+          <GlitchText className="text-4xl md:text-5xl font-bold tracking-tight font-display" as="h1">
+            {greeting}
+          </GlitchText>
+          <p className="text-lg text-muted-foreground">
+            Welcome back, <span className="text-gradient-primary font-semibold">Developer</span>
+            <span className="inline-block w-[2px] h-5 bg-primary ml-1 align-middle" style={{ animation: "typing-cursor 1s step-end infinite" }} />
           </p>
         </div>
       </ScrollReveal>
 
-      {/* Stats row */}
+      {/* Live stats strip */}
       <ScrollReveal delay={100}>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Notes", value: "—", icon: StickyNote, color: "primary" as const },
-            { label: "Snippets", value: "—", icon: Code2, color: "cyan" as const },
-            { label: "Projects", value: "—", icon: Briefcase, color: "accent" as const },
-            { label: "Quizzes", value: "—", icon: Brain, color: "amber" as const },
-          ].map((stat) => (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {stats.map((stat, i) => (
             <div
               key={stat.label}
-              className="rounded-lg border border-border/50 bg-card p-4 flex items-center gap-3"
+              className="group relative rounded-xl border border-border/20 bg-card/40 backdrop-blur-sm p-4 flex items-center gap-3 card-hover overflow-hidden"
+              style={{ animationDelay: `${i * 100}ms` }}
             >
-              <div className="rounded-md bg-secondary p-2">
-                <stat.icon className="h-4 w-4 text-muted-foreground" />
+              {/* Subtle bg glow */}
+              <div className={`absolute -top-4 -right-4 w-16 h-16 rounded-full bg-current opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700 ${colorClasses[stat.color]}`} />
+              <div className="rounded-lg bg-secondary/50 p-2.5 relative">
+                <stat.icon className={`h-4 w-4 ${colorClasses[stat.color]}`} />
               </div>
               <div>
-                <p className="text-2xl font-bold font-mono">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
+                <p className="text-2xl font-bold font-mono tracking-tight">{stat.value}</p>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-mono">{stat.label}</p>
               </div>
             </div>
           ))}
@@ -50,85 +73,112 @@ const Dashboard = () => {
 
       {/* Feature cards */}
       <ScrollReveal delay={200}>
+        <div className="flex items-center gap-2 mb-4">
+          <Activity className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-mono uppercase tracking-[0.15em] text-muted-foreground">Command Center</h2>
+        </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <DashboardCard
-            title="Notes & Knowledge"
-            icon={<StickyNote className="h-4 w-4" />}
-            accentColor="primary"
+          <CyberCard
+            glowColor="primary"
             onClick={() => navigate("/notes")}
           >
-            <p className="text-sm text-muted-foreground mb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <StickyNote className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold uppercase tracking-wider">Notes & Knowledge</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
               Capture ideas, tag them, find them instantly.
             </p>
-            <span className="text-xs text-primary font-medium">Open →</span>
-          </DashboardCard>
+            <div className="flex items-center gap-1 text-xs text-primary font-mono group/arrow">
+              <span>OPEN</span>
+              <ArrowRight className="h-3 w-3 transition-transform group-hover/arrow:translate-x-1" />
+            </div>
+          </CyberCard>
 
-          <DashboardCard
-            title="Code Snippets"
-            icon={<Code2 className="h-4 w-4" />}
-            accentColor="cyan"
+          <CyberCard
+            glowColor="cyan"
             onClick={() => navigate("/snippets")}
           >
-            <p className="text-sm text-muted-foreground mb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Code2 className="h-4 w-4 text-cyan" />
+              <h3 className="text-sm font-semibold uppercase tracking-wider">Code Snippets</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
               Your reusable code library. Angular, .NET, SQL & more.
             </p>
-            <span className="text-xs text-cyan font-medium">Open →</span>
-          </DashboardCard>
+            <div className="flex items-center gap-1 text-xs text-cyan font-mono">
+              <span>OPEN</span>
+              <ArrowRight className="h-3 w-3" />
+            </div>
+          </CyberCard>
 
-          <DashboardCard
-            title="Portfolio & Resume"
-            icon={<Briefcase className="h-4 w-4" />}
-            accentColor="accent"
+          <CyberCard
+            glowColor="accent"
             onClick={() => navigate("/portfolio")}
           >
-            <p className="text-sm text-muted-foreground mb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Briefcase className="h-4 w-4 text-accent" />
+              <h3 className="text-sm font-semibold uppercase tracking-wider">Portfolio & Resume</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
               Manage your career profile and generate resumes.
             </p>
-            <span className="text-xs text-accent font-medium">Open →</span>
-          </DashboardCard>
+            <div className="flex items-center gap-1 text-xs text-accent font-mono">
+              <span>OPEN</span>
+              <ArrowRight className="h-3 w-3" />
+            </div>
+          </CyberCard>
 
-          <DashboardCard
-            title="Quiz & Interview Prep"
-            icon={<Brain className="h-4 w-4" />}
-            accentColor="amber"
+          <CyberCard
+            glowColor="amber"
             onClick={() => navigate("/quiz")}
           >
-            <p className="text-sm text-muted-foreground mb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Brain className="h-4 w-4 text-amber" />
+              <h3 className="text-sm font-semibold uppercase tracking-wider">Quiz & Prep</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
               MCQs, flashcards, and timed practice sessions.
             </p>
-            <span className="text-xs text-amber font-medium">Open →</span>
-          </DashboardCard>
+            <div className="flex items-center gap-1 text-xs text-amber font-mono">
+              <span>OPEN</span>
+              <ArrowRight className="h-3 w-3" />
+            </div>
+          </CyberCard>
 
-          <DashboardCard
-            title="Quick Actions"
-            icon={<Zap className="h-4 w-4" />}
-            accentColor="rose"
-          >
-            <p className="text-sm text-muted-foreground mb-3">
-              More features coming soon: feeds, AI helper, locker.
+          <CyberCard glowColor="rose">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-4 w-4 text-rose" />
+              <h3 className="text-sm font-semibold uppercase tracking-wider">Coming Soon</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              AI helper, news feeds, job listings, personal locker.
             </p>
-            <span className="text-xs text-muted-foreground">Coming soon</span>
-          </DashboardCard>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
+              <span>LOCKED</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-rose/50" style={{ animation: "breathe 2s ease-in-out infinite" }} />
+            </div>
+          </CyberCard>
 
-          <DashboardCard
-            title="Today's Focus"
-            icon={<Clock className="h-4 w-4" />}
-            accentColor="primary"
-          >
-            <p className="text-sm text-muted-foreground mb-3">
+          <CyberCard glowColor="primary">
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold uppercase tracking-wider">Today's Focus</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-2">
               {new Date().toLocaleDateString("en-US", {
                 weekday: "long",
                 month: "long",
                 day: "numeric",
               })}
             </p>
-            <span className="text-xs text-primary font-mono">
+            <span className="text-lg text-primary font-mono font-bold">
               {new Date().toLocaleTimeString("en-US", {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
             </span>
-          </DashboardCard>
+          </CyberCard>
         </div>
       </ScrollReveal>
     </div>
