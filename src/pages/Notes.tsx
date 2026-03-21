@@ -1,4 +1,5 @@
-import { useState, useEffect, StickyNote } from "react";
+import { useState, useEffect } from "react";
+import { StickyNote } from "lucide-react";
 import { Plus, Search, Trash2, Save, X, Pin, PinOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
