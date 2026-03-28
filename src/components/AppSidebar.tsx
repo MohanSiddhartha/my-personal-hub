@@ -4,6 +4,8 @@ import {
   Code2,
   Briefcase,
   Brain,
+  Bot,
+  FolderLock,
   Terminal,
   Hexagon,
   LogOut,
@@ -31,6 +33,8 @@ const mainItems = [
   { title: "Snippets", url: "/snippets", icon: Code2, color: "text-cyan" },
   { title: "Portfolio", url: "/portfolio", icon: Briefcase, color: "text-accent" },
   { title: "Quiz", url: "/quiz", icon: Brain, color: "text-amber" },
+  { title: "AI Helper", url: "/ai", icon: Bot, color: "text-electric" },
+  { title: "File Locker", url: "/files", icon: FolderLock, color: "text-rose" },
 ];
 
 export function AppSidebar() {

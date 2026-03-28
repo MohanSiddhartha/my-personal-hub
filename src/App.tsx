@@ -10,6 +10,8 @@ import Notes from "./pages/Notes";
 import Snippets from "./pages/Snippets";
 import Portfolio from "./pages/Portfolio";
 import Quiz from "./pages/Quiz";
+import AiHelper from "./pages/AiHelper";
+import FileLocker from "./pages/FileLocker";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -49,6 +51,8 @@ const App = () => (
             <Route path="/snippets" element={<ProtectedRoute><AppLayout><Snippets /></AppLayout></ProtectedRoute>} />
             <Route path="/portfolio" element={<ProtectedRoute><AppLayout><Portfolio /></AppLayout></ProtectedRoute>} />
             <Route path="/quiz" element={<ProtectedRoute><AppLayout><Quiz /></AppLayout></ProtectedRoute>} />
+            <Route path="/ai" element={<ProtectedRoute><AppLayout><AiHelper /></AppLayout></ProtectedRoute>} />
+            <Route path="/files" element={<ProtectedRoute><AppLayout><FileLocker /></AppLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
