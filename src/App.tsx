@@ -51,6 +51,8 @@ const App = () => (
             <Route path="/snippets" element={<ProtectedRoute><AppLayout><Snippets /></AppLayout></ProtectedRoute>} />
             <Route path="/portfolio" element={<ProtectedRoute><AppLayout><Portfolio /></AppLayout></ProtectedRoute>} />
             <Route path="/quiz" element={<ProtectedRoute><AppLayout><Quiz /></AppLayout></ProtectedRoute>} />
+            <Route path="/ai" element={<ProtectedRoute><AppLayout><AiHelper /></AppLayout></ProtectedRoute>} />
+            <Route path="/files" element={<ProtectedRoute><AppLayout><FileLocker /></AppLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
