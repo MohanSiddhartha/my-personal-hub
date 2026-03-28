@@ -10,6 +10,8 @@ import Notes from "./pages/Notes";
 import Snippets from "./pages/Snippets";
 import Portfolio from "./pages/Portfolio";
 import Quiz from "./pages/Quiz";
+import AiHelper from "./pages/AiHelper";
+import FileLocker from "./pages/FileLocker";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
