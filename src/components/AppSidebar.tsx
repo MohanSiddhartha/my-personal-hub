@@ -4,6 +4,8 @@ import {
   Code2,
   Briefcase,
   Brain,
+  Bot,
+  FolderLock,
   Terminal,
   Hexagon,
   LogOut,
