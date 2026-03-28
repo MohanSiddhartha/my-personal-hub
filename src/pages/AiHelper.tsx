@@ -119,7 +119,7 @@ export default function AiHelper() {
             <Bot className="h-8 w-8 text-primary" />
             <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary animate-breathe" />
           </div>
-          <GlitchText text="AI HELPER" className="text-2xl md:text-3xl" />
+          <GlitchText className="text-2xl md:text-3xl">AI HELPER</GlitchText>
         </div>
         {messages.length > 0 && (
           <Button

@@ -104,7 +104,7 @@ export default function FileLocker() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <FolderLock className="h-8 w-8 text-primary" style={{ animation: "float 6s ease-in-out infinite" }} />
-          <GlitchText text="FILE LOCKER" className="text-2xl md:text-3xl" />
+          <GlitchText className="text-2xl md:text-3xl">FILE LOCKER</GlitchText>
         </div>
         <label>
           <input type="file" multiple className="hidden" onChange={handleUpload} accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.txt,.md,.csv,.xlsx" />
