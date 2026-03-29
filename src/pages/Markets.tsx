@@ -59,10 +59,8 @@ export default function Markets() {
     return acc;
   }, {});
 
-  const formatPrice = (price: number, currency: string) => {
-    if (currency === "INR") return `₹${price.toLocaleString("en-IN")}`;
-    if (currency === "USD") return `$${price.toLocaleString("en-US")}`;
-    return `${price.toLocaleString()}`;
+  const formatPrice = (price: number) => {
+    return `₹${price.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
   };
 
   return (
@@ -153,7 +151,7 @@ export default function Markets() {
                       </div>
                       <div className="flex items-end justify-between">
                         <span className="text-xl font-bold font-mono">
-                          {formatPrice(m.price, m.currency)}
+                          {formatPrice(m.price)}
                         </span>
                         <span
                           className={`text-xs font-mono ${

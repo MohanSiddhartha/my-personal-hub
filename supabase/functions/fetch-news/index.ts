@@ -8,10 +8,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { category = "technology", page = 1 } = await req.json();
+    const { category = "technology" } = await req.json();
 
-    // Use GNews free API (no key needed for limited requests)
-    // Fallback to a curated RSS-to-JSON approach
     const apiKey = Deno.env.get("GNEWS_API_KEY");
     
     let articles = [];
@@ -29,9 +27,12 @@ Deno.serve(async (req) => {
         published_at: a.publishedAt,
       }));
     } else {
-      // Fallback: use free newsdata.io or a similar free endpoint
-      // Using dev.to as a reliable free tech news source
-      const res = await fetch("https://dev.to/api/articles?per_page=20&top=7&tag=technology");
+      // Use multiple dev.to endpoints for variety on refresh
+      const tags = ["technology", "webdev", "programming", "ai", "javascript", "devops", "opensource"];
+      const randomTag = tags[Math.floor(Math.random() * tags.length)];
+      const page = Math.floor(Math.random() * 5) + 1;
+      
+      const res = await fetch(`https://dev.to/api/articles?per_page=20&page=${page}&tag=${randomTag}&top=30`);
       const data = await res.json();
       articles = (data || []).map((a: any) => ({
         title: a.title,
@@ -40,6 +41,10 @@ Deno.serve(async (req) => {
         source: a.organization?.name || a.user?.name || "Dev.to",
         image_url: a.cover_image || a.social_image,
         published_at: a.published_at,
+        reading_time: a.reading_time_minutes,
+        tags: a.tag_list || [],
+        reactions: a.positive_reactions_count || 0,
+        comments: a.comments_count || 0,
       }));
     }
 
