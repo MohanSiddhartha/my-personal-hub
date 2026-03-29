@@ -59,10 +59,8 @@ export default function Markets() {
     return acc;
   }, {});
 
-  const formatPrice = (price: number, currency: string) => {
-    if (currency === "INR") return `₹${price.toLocaleString("en-IN")}`;
-    if (currency === "USD") return `$${price.toLocaleString("en-US")}`;
-    return `${price.toLocaleString()}`;
+  const formatPrice = (price: number) => {
+    return `₹${price.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
   };
 
   return (

@@ -6,21 +6,31 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Fetch Indian market data from free APIs
-    // Using Yahoo Finance unofficial API for Indian stocks/commodities
+    // First fetch USD/INR rate for conversion
+    let usdToInr = 83.5; // fallback rate
+    try {
+      const fxRes = await fetch(
+        "https://query1.finance.yahoo.com/v8/finance/chart/USDINR=X?range=1d&interval=1d",
+        { headers: { "User-Agent": "Mozilla/5.0" } }
+      );
+      const fxData = await fxRes.json();
+      const fxMeta = fxData?.chart?.result?.[0]?.meta;
+      if (fxMeta?.regularMarketPrice) usdToInr = fxMeta.regularMarketPrice;
+    } catch { /* use fallback */ }
+
     const symbols = [
-      { symbol: "^NSEI", name: "NIFTY 50", type: "index" },
-      { symbol: "^BSESN", name: "SENSEX", type: "index" },
-      { symbol: "^NSEBANK", name: "BANK NIFTY", type: "index" },
-      { symbol: "GC=F", name: "Gold (USD/oz)", type: "commodity" },
-      { symbol: "SI=F", name: "Silver (USD/oz)", type: "commodity" },
-      { symbol: "CL=F", name: "Crude Oil", type: "commodity" },
-      { symbol: "RELIANCE.NS", name: "Reliance", type: "stock" },
-      { symbol: "TCS.NS", name: "TCS", type: "stock" },
-      { symbol: "INFY.NS", name: "Infosys", type: "stock" },
-      { symbol: "HDFCBANK.NS", name: "HDFC Bank", type: "stock" },
-      { symbol: "ICICIBANK.NS", name: "ICICI Bank", type: "stock" },
-      { symbol: "USDINR=X", name: "USD/INR", type: "forex" },
+      { symbol: "^NSEI", name: "NIFTY 50", type: "index", convertToInr: false },
+      { symbol: "^BSESN", name: "SENSEX", type: "index", convertToInr: false },
+      { symbol: "^NSEBANK", name: "BANK NIFTY", type: "index", convertToInr: false },
+      { symbol: "GC=F", name: "Gold (per 10g)", type: "commodity", convertToInr: true, goldConvert: true },
+      { symbol: "SI=F", name: "Silver (per kg)", type: "commodity", convertToInr: true, silverConvert: true },
+      { symbol: "CL=F", name: "Crude Oil (per bbl)", type: "commodity", convertToInr: true },
+      { symbol: "RELIANCE.NS", name: "Reliance", type: "stock", convertToInr: false },
+      { symbol: "TCS.NS", name: "TCS", type: "stock", convertToInr: false },
+      { symbol: "INFY.NS", name: "Infosys", type: "stock", convertToInr: false },
+      { symbol: "HDFCBANK.NS", name: "HDFC Bank", type: "stock", convertToInr: false },
+      { symbol: "ICICIBANK.NS", name: "ICICI Bank", type: "stock", convertToInr: false },
+      { symbol: "USDINR=X", name: "USD/INR", type: "forex", convertToInr: false },
     ];
 
     const results = await Promise.allSettled(
@@ -34,8 +44,28 @@ Deno.serve(async (req) => {
           const meta = data?.chart?.result?.[0]?.meta;
           if (!meta) return null;
 
-          const price = meta.regularMarketPrice ?? 0;
-          const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? price;
+          let price = meta.regularMarketPrice ?? 0;
+          let prevClose = meta.chartPreviousClose ?? meta.previousClose ?? price;
+
+          if (s.convertToInr) {
+            // Convert USD prices to INR
+            price = price * usdToInr;
+            prevClose = prevClose * usdToInr;
+
+            if ((s as any).goldConvert) {
+              // Gold: USD/troy oz → INR per 10 grams
+              // 1 troy oz = 31.1035g, so 10g = 10/31.1035 troy oz
+              price = price * (10 / 31.1035);
+              prevClose = prevClose * (10 / 31.1035);
+            }
+            if ((s as any).silverConvert) {
+              // Silver: USD/troy oz → INR per kg
+              // 1 troy oz = 31.1035g, so 1kg = 1000/31.1035 troy oz
+              price = price * (1000 / 31.1035);
+              prevClose = prevClose * (1000 / 31.1035);
+            }
+          }
+
           const change = price - prevClose;
           const changePercent = prevClose ? (change / prevClose) * 100 : 0;
 
@@ -46,7 +76,7 @@ Deno.serve(async (req) => {
             price: Number(price.toFixed(2)),
             change: Number(change.toFixed(2)),
             changePercent: Number(changePercent.toFixed(2)),
-            currency: meta.currency || "INR",
+            currency: "INR",
           };
         } catch {
           return null;
