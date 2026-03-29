@@ -203,6 +203,42 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_articles: {
+        Row: {
+          description: string | null
+          id: string
+          image_url: string | null
+          published_at: string | null
+          saved_at: string
+          source: string | null
+          title: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          published_at?: string | null
+          saved_at?: string
+          source?: string | null
+          title: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          published_at?: string | null
+          saved_at?: string
+          source?: string | null
+          title?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       skills: {
         Row: {
           category: string | null

@@ -109,7 +109,7 @@ export function AppSidebar() {
         {!collapsed && profile && (
           <div className="rounded-lg border border-border/30 bg-card/40 p-3 mb-2">
             <p className="text-sm font-medium text-foreground truncate">{profile.display_name || "Developer"}</p>
-            <p className="text-[10px] font-mono text-muted-foreground/60 mt-0.5">DevVault v0.1.0</p>
+            <p className="text-[10px] font-mono text-muted-foreground/60 mt-0.5">SIRA v1.0.0</p>
           </div>
         )}
         <SidebarMenu>
