@@ -12,6 +12,8 @@ import Portfolio from "./pages/Portfolio";
 import Quiz from "./pages/Quiz";
 import AiHelper from "./pages/AiHelper";
 import FileLocker from "./pages/FileLocker";
+import Articles from "./pages/Articles";
+import Markets from "./pages/Markets";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -53,6 +55,8 @@ const App = () => (
             <Route path="/quiz" element={<ProtectedRoute><AppLayout><Quiz /></AppLayout></ProtectedRoute>} />
             <Route path="/ai" element={<ProtectedRoute><AppLayout><AiHelper /></AppLayout></ProtectedRoute>} />
             <Route path="/files" element={<ProtectedRoute><AppLayout><FileLocker /></AppLayout></ProtectedRoute>} />
+            <Route path="/articles" element={<ProtectedRoute><AppLayout><Articles /></AppLayout></ProtectedRoute>} />
+            <Route path="/markets" element={<ProtectedRoute><AppLayout><Markets /></AppLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

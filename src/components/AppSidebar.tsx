@@ -9,6 +9,8 @@ import {
   Terminal,
   Hexagon,
   LogOut,
+  Newspaper,
+  TrendingUp,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -35,6 +37,8 @@ const mainItems = [
   { title: "Quiz", url: "/quiz", icon: Brain, color: "text-amber" },
   { title: "AI Helper", url: "/ai", icon: Bot, color: "text-electric" },
   { title: "File Locker", url: "/files", icon: FolderLock, color: "text-rose" },
+  { title: "Articles", url: "/articles", icon: Newspaper, color: "text-emerald-400" },
+  { title: "Markets", url: "/markets", icon: TrendingUp, color: "text-orange-400" },
 ];
 
 export function AppSidebar() {
@@ -58,7 +62,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <span className="text-lg font-display font-bold tracking-wider text-gradient-primary">
-              DEVVAULT
+              SIRA
             </span>
           )}
         </div>
@@ -105,7 +109,7 @@ export function AppSidebar() {
         {!collapsed && profile && (
           <div className="rounded-lg border border-border/30 bg-card/40 p-3 mb-2">
             <p className="text-sm font-medium text-foreground truncate">{profile.display_name || "Developer"}</p>
-            <p className="text-[10px] font-mono text-muted-foreground/60 mt-0.5">DevVault v0.1.0</p>
+            <p className="text-[10px] font-mono text-muted-foreground/60 mt-0.5">SIRA v1.0.0</p>
           </div>
         )}
         <SidebarMenu>
