@@ -62,7 +62,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <span className="text-lg font-display font-bold tracking-wider text-gradient-primary">
-              DEVVAULT
+              SIRA
             </span>
           )}
         </div>
