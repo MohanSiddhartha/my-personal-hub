@@ -12,6 +12,8 @@ import Portfolio from "./pages/Portfolio";
 import Quiz from "./pages/Quiz";
 import AiHelper from "./pages/AiHelper";
 import FileLocker from "./pages/FileLocker";
+import Articles from "./pages/Articles";
+import Markets from "./pages/Markets";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
