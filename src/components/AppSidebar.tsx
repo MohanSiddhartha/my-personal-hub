@@ -35,6 +35,8 @@ const mainItems = [
   { title: "Quiz", url: "/quiz", icon: Brain, color: "text-amber" },
   { title: "AI Helper", url: "/ai", icon: Bot, color: "text-electric" },
   { title: "File Locker", url: "/files", icon: FolderLock, color: "text-rose" },
+  { title: "Articles", url: "/articles", icon: Newspaper, color: "text-emerald-400" },
+  { title: "Markets", url: "/markets", icon: TrendingUp, color: "text-orange-400" },
 ];
 
 export function AppSidebar() {
