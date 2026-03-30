@@ -44,7 +44,7 @@ const Dashboard = () => {
             {greeting}
           </GlitchText>
           <p className="text-lg text-muted-foreground">
-            Welcome back, <span className="text-gradient-primary font-semibold">Developer</span>
+            Welcome back, <span className="text-gradient-primary font-semibold">{profile?.display_name || user?.email?.split("@")[0] || "Developer"}</span>
             <span className="inline-block w-[2px] h-5 bg-primary ml-1 align-middle" style={{ animation: "typing-cursor 1s step-end infinite" }} />
           </p>
         </div>
