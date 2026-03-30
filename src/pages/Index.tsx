@@ -2,6 +2,7 @@ import { StickyNote, Code2, Briefcase, Brain, Clock, Zap, ArrowRight, Sparkles, 
 import { useNavigate } from "react-router-dom";
 import { CyberCard } from "@/components/CyberCard";
 import { GlitchText } from "@/components/GlitchText";
+import { useAuth } from "@/contexts/AuthContext";
 import { StatusIndicator } from "@/components/StatusIndicator";
 import { ScrollReveal } from "@/components/ScrollReveal";
 
