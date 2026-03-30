@@ -8,6 +8,7 @@ import { ScrollReveal } from "@/components/ScrollReveal";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { profile, user } = useAuth();
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
