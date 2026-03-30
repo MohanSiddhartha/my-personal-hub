@@ -11,6 +11,7 @@ import {
   LogOut,
   Newspaper,
   TrendingUp,
+  Lightbulb,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -39,6 +40,7 @@ const mainItems = [
   { title: "File Locker", url: "/files", icon: FolderLock, color: "text-rose" },
   { title: "Articles", url: "/articles", icon: Newspaper, color: "text-emerald-400" },
   { title: "Markets", url: "/markets", icon: TrendingUp, color: "text-orange-400" },
+  { title: "Facts", url: "/facts", icon: Lightbulb, color: "text-rose" },
 ];
 
 export function AppSidebar() {
