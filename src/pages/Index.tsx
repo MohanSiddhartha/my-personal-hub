@@ -63,7 +63,7 @@ const Dashboard = () => {
             </span>
           </div>
           <GlitchText className="text-4xl md:text-5xl font-bold tracking-tight font-display" as="h1">
-            {greeting}, {profile?.display_name || user?.email?.split("@")[0] || "Developer"}
+            {`${greeting}, ${profile?.display_name || user?.email?.split("@")[0] || "Developer"}`}
           </GlitchText>
           <p className="text-lg text-muted-foreground">
             Welcome back to <span className="text-gradient-primary font-semibold">SIRA</span>
