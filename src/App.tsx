@@ -14,6 +14,7 @@ import AiHelper from "./pages/AiHelper";
 import FileLocker from "./pages/FileLocker";
 import Articles from "./pages/Articles";
 import Markets from "./pages/Markets";
+import Facts from "./pages/Facts";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
