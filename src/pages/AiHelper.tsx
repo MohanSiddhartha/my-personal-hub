@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { GlitchText } from "@/components/GlitchText";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -119,7 +120,7 @@ export default function AiHelper() {
             <Bot className="h-8 w-8 text-primary" />
             <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary animate-breathe" />
           </div>
-          <GlitchText className="text-2xl md:text-3xl">AI HELPER</GlitchText>
+          <GlitchText className="text-2xl md:text-3xl">SIRA AI</GlitchText>
         </div>
         {messages.length > 0 && (
           <Button
@@ -160,13 +161,19 @@ export default function AiHelper() {
               {messages.map((m, i) => (
                 <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[80%] rounded-xl px-4 py-3 text-sm whitespace-pre-wrap ${
+                    className={`max-w-[80%] rounded-xl px-4 py-3 text-sm ${
                       m.role === "user"
-                        ? "bg-primary/15 border border-primary/30 text-foreground"
-                        : "bg-card/60 border border-border/30 text-foreground font-mono text-xs leading-relaxed"
+                        ? "bg-primary/15 border border-primary/30 text-foreground whitespace-pre-wrap"
+                        : "bg-card/60 border border-border/30 text-foreground"
                     }`}
                   >
-                    {m.content}
+                    {m.role === "assistant" ? (
+                      <div className="prose prose-sm prose-invert max-w-none prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-muted/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-muted/30 prose-pre:border prose-pre:border-border/30 prose-li:text-foreground/90 prose-a:text-primary">
+                        <ReactMarkdown>{m.content}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      m.content
+                    )}
                   </div>
                 </div>
               ))}
@@ -188,7 +195,7 @@ export default function AiHelper() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask DevVault AI anything..."
+              placeholder="Ask SIRA anything..."
               className="resize-none min-h-[44px] max-h-[120px] bg-surface-2/50 border-border/40 font-mono text-sm"
               rows={1}
             />

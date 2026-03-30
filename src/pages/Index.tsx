@@ -2,11 +2,13 @@ import { StickyNote, Code2, Briefcase, Brain, Clock, Zap, ArrowRight, Sparkles, 
 import { useNavigate } from "react-router-dom";
 import { CyberCard } from "@/components/CyberCard";
 import { GlitchText } from "@/components/GlitchText";
+import { useAuth } from "@/contexts/AuthContext";
 import { StatusIndicator } from "@/components/StatusIndicator";
 import { ScrollReveal } from "@/components/ScrollReveal";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { profile, user } = useAuth();
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -42,7 +44,7 @@ const Dashboard = () => {
             {greeting}
           </GlitchText>
           <p className="text-lg text-muted-foreground">
-            Welcome back, <span className="text-gradient-primary font-semibold">Developer</span>
+            Welcome back, <span className="text-gradient-primary font-semibold">{profile?.display_name || user?.email?.split("@")[0] || "Developer"}</span>
             <span className="inline-block w-[2px] h-5 bg-primary ml-1 align-middle" style={{ animation: "typing-cursor 1s step-end infinite" }} />
           </p>
         </div>

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Brain, Clock, CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Brain, Clock, CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollReveal } from "@/components/ScrollReveal";
@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface Question {
-  id: string;
   question: string;
   options: string[];
   correct: number;
@@ -19,16 +18,7 @@ interface Question {
   explanation: string;
 }
 
-const QUESTIONS: Question[] = [
-  { id: "1", question: "What is the purpose of Angular's NgZone?", options: ["Manages component lifecycle", "Handles change detection triggers", "Provides dependency injection", "Manages routing guards"], correct: 1, difficulty: "intermediate", category: "Angular", explanation: "NgZone helps Angular know when to trigger change detection by patching async APIs." },
-  { id: "2", question: "In SQL, what does COALESCE do?", options: ["Joins two tables", "Returns the first non-null value", "Counts distinct values", "Creates an index"], correct: 1, difficulty: "basic", category: "SQL", explanation: "COALESCE returns the first non-null expression among its arguments." },
-  { id: "3", question: "What is middleware in .NET?", options: ["A database ORM", "Software in the request/response pipeline", "A testing framework", "A deployment tool"], correct: 1, difficulty: "basic", category: ".NET", explanation: "Middleware is software assembled into a pipeline to handle requests and responses." },
-  { id: "4", question: "What does 'trackBy' do in Angular *ngFor?", options: ["Tracks HTTP requests", "Optimizes DOM re-rendering by identity", "Monitors component state", "Logs performance metrics"], correct: 1, difficulty: "intermediate", category: "Angular", explanation: "trackBy helps Angular identify items to minimize DOM manipulation during list re-renders." },
-  { id: "5", question: "What is a CTE in SQL?", options: ["Cascading Table Expression", "Common Table Expression", "Computed Transaction Entity", "Cross-Table Evaluation"], correct: 1, difficulty: "intermediate", category: "SQL", explanation: "A CTE (Common Table Expression) defines a temporary result set referenced within a query." },
-  { id: "6", question: "What pattern does Angular's HttpInterceptor implement?", options: ["Observer pattern", "Chain of responsibility", "Singleton pattern", "Factory pattern"], correct: 1, difficulty: "pro", category: "Angular", explanation: "Interceptors form a chain where each can transform or handle the request/response." },
-];
-
-const CATEGORIES = ["All", "Angular", "SQL", ".NET"];
+const CATEGORIES = ["All", "Angular", "React", "SQL", ".NET", "TypeScript", "Python", "System Design"];
 const DIFFICULTIES = ["all", "basic", "intermediate", "pro"] as const;
 const difficultyColors = { basic: "text-primary", intermediate: "text-amber", pro: "text-rose" };
 
@@ -37,6 +27,7 @@ const QuizPage = () => {
   const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedDifficulty, setSelectedDifficulty] = useState<typeof DIFFICULTIES[number]>("all");
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -45,15 +36,10 @@ const QuizPage = () => {
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
   const [quizStarted, setQuizStarted] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [pastResults, setPastResults] = useState<any[]>([]);
 
-  const filteredQuestions = QUESTIONS.filter((q) => {
-    const matchCat = selectedCategory === "All" || q.category === selectedCategory;
-    const matchDiff = selectedDifficulty === "all" || q.difficulty === selectedDifficulty;
-    return matchCat && matchDiff;
-  });
-
-  const currentQ = filteredQuestions[currentIndex];
+  const currentQ = questions[currentIndex];
 
   const fetchResults = async () => {
     if (!user) return;
@@ -75,6 +61,36 @@ const QuizPage = () => {
     return () => clearTimeout(t);
   }, [timeLeft, timerEnabled, quizStarted, selected]);
 
+  const generateQuestions = async () => {
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-quiz", {
+        body: {
+          category: selectedCategory,
+          difficulty: selectedDifficulty,
+          count: 10,
+        },
+      });
+      if (error) throw error;
+      if (data?.questions?.length) {
+        setQuestions(data.questions);
+        setQuizStarted(true);
+        setCurrentIndex(0);
+        setScore(0);
+        setAnswered(0);
+        setSelected(null);
+        setShowExplanation(false);
+        setTimeLeft(30);
+      } else {
+        throw new Error("No questions generated");
+      }
+    } catch (e: any) {
+      toast({ title: "Failed to generate quiz", description: e.message, variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleAnswer = (idx: number) => {
     if (selected !== null) return;
     setSelected(idx);
@@ -84,8 +100,7 @@ const QuizPage = () => {
   };
 
   const nextQuestion = () => {
-    if (currentIndex >= filteredQuestions.length - 1) {
-      // Quiz complete — save result
+    if (currentIndex >= questions.length - 1) {
       saveResult();
       return;
     }
@@ -97,14 +112,15 @@ const QuizPage = () => {
 
   const saveResult = async () => {
     if (!user) return;
+    const finalScore = score + (selected === currentQ?.correct ? 1 : 0);
     await supabase.from("quiz_results").insert({
       user_id: user.id,
       category: selectedCategory,
       difficulty: selectedDifficulty,
-      score: score + (selected === currentQ?.correct ? 1 : 0),
-      total: filteredQuestions.length,
+      score: finalScore,
+      total: questions.length,
     });
-    toast({ title: "Quiz complete!", description: `Score: ${score}/${filteredQuestions.length}` });
+    toast({ title: "Quiz complete!", description: `Score: ${finalScore}/${questions.length}` });
     fetchResults();
     resetQuiz();
   };
@@ -117,6 +133,7 @@ const QuizPage = () => {
     setAnswered(0);
     setTimeLeft(30);
     setQuizStarted(false);
+    setQuestions([]);
   };
 
   if (!quizStarted) {
@@ -125,7 +142,7 @@ const QuizPage = () => {
         <ScrollReveal>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Quiz & Interview Prep</h1>
-            <p className="text-sm text-muted-foreground">Sharpen your skills with MCQs</p>
+            <p className="text-sm text-muted-foreground">AI-generated questions — fresh every time</p>
           </div>
         </ScrollReveal>
 
@@ -153,9 +170,18 @@ const QuizPage = () => {
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span>30s timer per question</span>
               </label>
-              <p className="text-sm text-muted-foreground font-mono">{filteredQuestions.length} questions available</p>
-              <Button variant="glow" className="w-full" onClick={() => setQuizStarted(true)} disabled={filteredQuestions.length === 0}>
-                Start Quiz <ChevronRight className="h-4 w-4" />
+              <Button variant="glow" className="w-full" onClick={generateQuestions} disabled={isGenerating}>
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Generating Questions...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="h-4 w-4 mr-2" />
+                    Generate & Start Quiz
+                  </>
+                )}
               </Button>
             </div>
           </CyberCard>
@@ -189,8 +215,8 @@ const QuizPage = () => {
     return (
       <div className="max-w-3xl mx-auto text-center py-16">
         <Brain className="h-10 w-10 mx-auto mb-4 text-muted-foreground opacity-40" />
-        <p className="text-muted-foreground">No questions match your filters.</p>
-        <Button variant="outline" className="mt-4" onClick={resetQuiz}>Change filters</Button>
+        <p className="text-muted-foreground">No questions available.</p>
+        <Button variant="outline" className="mt-4" onClick={resetQuiz}>Go Back</Button>
       </div>
     );
   }
@@ -201,7 +227,7 @@ const QuizPage = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Quiz Mode</h1>
           <p className="text-sm text-muted-foreground">
-            Score: <span className="font-mono text-primary">{score}/{answered}</span> · Question {currentIndex + 1}/{filteredQuestions.length}
+            Score: <span className="font-mono text-primary">{score}/{answered}</span> · Question {currentIndex + 1}/{questions.length}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -216,7 +242,7 @@ const QuizPage = () => {
         <div className="space-y-5">
           <div className="flex items-center gap-2 mb-1">
             <Badge variant="secondary">{currentQ.category}</Badge>
-            <span className={cn("text-xs font-medium capitalize", difficultyColors[currentQ.difficulty])}>{currentQ.difficulty}</span>
+            <span className={cn("text-xs font-medium capitalize", difficultyColors[currentQ.difficulty] || "text-muted-foreground")}>{currentQ.difficulty}</span>
           </div>
           <h2 className="text-lg font-semibold leading-relaxed">{currentQ.question}</h2>
 
@@ -253,7 +279,7 @@ const QuizPage = () => {
 
           {selected !== null && (
             <Button variant="glow" className="w-full" onClick={nextQuestion}>
-              {currentIndex >= filteredQuestions.length - 1 ? "Finish Quiz" : "Next Question"} <ChevronRight className="h-4 w-4" />
+              {currentIndex >= questions.length - 1 ? "Finish Quiz" : "Next Question"} <ChevronRight className="h-4 w-4" />
             </Button>
           )}
         </div>
