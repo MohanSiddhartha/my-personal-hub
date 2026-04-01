@@ -15,6 +15,8 @@ import FileLocker from "./pages/FileLocker";
 import Articles from "./pages/Articles";
 import Markets from "./pages/Markets";
 import Facts from "./pages/Facts";
+import InterviewPrep from "./pages/InterviewPrep";
+import Jobs from "./pages/Jobs";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
