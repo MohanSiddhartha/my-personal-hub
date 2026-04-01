@@ -43,6 +43,8 @@ const mainItems = [
   { title: "Articles", url: "/articles", icon: Newspaper, color: "text-emerald-400" },
   { title: "Markets", url: "/markets", icon: TrendingUp, color: "text-orange-400" },
   { title: "Facts", url: "/facts", icon: Lightbulb, color: "text-rose" },
+  { title: "Interview Prep", url: "/interview", icon: GraduationCap, color: "text-violet-400" },
+  { title: "Jobs", url: "/jobs", icon: Search, color: "text-sky-400" },
 ];
 
 export function AppSidebar() {
