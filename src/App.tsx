@@ -15,6 +15,8 @@ import FileLocker from "./pages/FileLocker";
 import Articles from "./pages/Articles";
 import Markets from "./pages/Markets";
 import Facts from "./pages/Facts";
+import InterviewPrep from "./pages/InterviewPrep";
+import Jobs from "./pages/Jobs";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -59,6 +61,8 @@ const App = () => (
             <Route path="/articles" element={<ProtectedRoute><AppLayout><Articles /></AppLayout></ProtectedRoute>} />
             <Route path="/markets" element={<ProtectedRoute><AppLayout><Markets /></AppLayout></ProtectedRoute>} />
             <Route path="/facts" element={<ProtectedRoute><AppLayout><Facts /></AppLayout></ProtectedRoute>} />
+            <Route path="/interview" element={<ProtectedRoute><AppLayout><InterviewPrep /></AppLayout></ProtectedRoute>} />
+            <Route path="/jobs" element={<ProtectedRoute><AppLayout><Jobs /></AppLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
