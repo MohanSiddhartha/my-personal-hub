@@ -30,7 +30,7 @@ const searchPresets = [
 ];
 
 export default function Jobs() {
-  const [query, setQuery] = useState("software developer India");
+  const [query, setQuery] = useState("software developer");
   const [customQuery, setCustomQuery] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
