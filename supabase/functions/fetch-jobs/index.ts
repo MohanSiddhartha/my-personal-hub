@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { query = "software developer", location = "India" } = await req.json();
+    const { query = "software developer" } = await req.json();
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
@@ -14,26 +14,59 @@ Deno.serve(async (req) => {
     let jobs: any[] = [];
 
     try {
-      // Use Remotive API (free, no key needed) for remote tech jobs
+      // Use Remotive API for remote jobs, filtered for India
       const searchQuery = encodeURIComponent(query);
       const res = await fetch(
-        `https://remotive.com/api/remote-jobs?search=${searchQuery}&limit=20`,
+        `https://remotive.com/api/remote-jobs?search=${searchQuery}&limit=30`,
         { signal: controller.signal }
       );
       const data = await res.json();
-      jobs = (data.jobs || []).map((j: any) => ({
-        title: j.title,
-        company: j.company_name,
-        location: j.candidate_required_location || "Remote",
-        type: j.job_type || "Full-time",
-        url: j.url,
-        description: j.description?.replace(/<[^>]*>/g, "").substring(0, 200) + "...",
-        salary: j.salary || null,
-        tags: j.tags || [],
-        published_at: j.publication_date,
-        company_logo: j.company_logo || null,
-        category: j.category || "Software Development",
-      }));
+
+      // Filter for India-compatible jobs and convert salary to INR
+      const allJobs = data.jobs || [];
+      jobs = allJobs
+        .filter((j: any) => {
+          const loc = (j.candidate_required_location || "").toLowerCase();
+          return (
+            loc.includes("india") ||
+            loc.includes("asia") ||
+            loc.includes("anywhere") ||
+            loc.includes("worldwide") ||
+            loc === "" ||
+            loc.includes("apac")
+          );
+        })
+        .slice(0, 20)
+        .map((j: any) => {
+          // Convert USD salary to INR (approximate rate)
+          let salaryINR: string | null = null;
+          if (j.salary) {
+            const usdMatch = j.salary.match(/[\d,]+/g);
+            if (usdMatch) {
+              const nums = usdMatch.map((n: string) => parseInt(n.replace(/,/g, ""), 10));
+              if (nums.length >= 2) {
+                salaryINR = `₹${(nums[0] * 85).toLocaleString("en-IN")} - ₹${(nums[1] * 85).toLocaleString("en-IN")}`;
+              } else if (nums.length === 1) {
+                salaryINR = `₹${(nums[0] * 85).toLocaleString("en-IN")}`;
+              }
+            }
+            if (!salaryINR) salaryINR = j.salary;
+          }
+
+          return {
+            title: j.title,
+            company: j.company_name,
+            location: j.candidate_required_location || "India (Remote)",
+            type: j.job_type || "Full-time",
+            url: j.url,
+            description: j.description?.replace(/<[^>]*>/g, "").substring(0, 200) + "...",
+            salary: salaryINR,
+            tags: j.tags || [],
+            published_at: j.publication_date,
+            company_logo: j.company_logo || null,
+            category: j.category || "Software Development",
+          };
+        });
     } finally {
       clearTimeout(timeout);
     }
