@@ -15,6 +15,19 @@ function convertSalaryToINR(salary: string | null): string | null {
   return salary;
 }
 
+const INDIA_KEYWORDS = ["india", "bangalore", "bengaluru", "hyderabad", "mumbai", "delhi", "pune", "chennai", "kolkata", "noida", "gurgaon", "gurugram", "ahmedabad", "jaipur", "kochi", "thiruvananthapuram", "indore", "chandigarh", "lucknow", "nagpur", "coimbatore", "vadodara", "bhubaneswar", "visakhapatnam", "mangalore"];
+
+function isIndiaJob(location: string): boolean {
+  const loc = location.toLowerCase();
+  return INDIA_KEYWORDS.some(kw => loc.includes(kw));
+}
+
+function isOpenToIndia(location: string): boolean {
+  const loc = location.toLowerCase();
+  // "anywhere", "worldwide", empty = could be India
+  return loc === "" || loc.includes("anywhere") || loc.includes("worldwide");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -23,35 +36,76 @@ Deno.serve(async (req) => {
   try {
     const { query = "software developer" } = await req.json();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
     let jobs: any[] = [];
 
     try {
-      const searchQuery = encodeURIComponent(query);
-      const res = await fetch(
-        `https://remotive.com/api/remote-jobs?search=${searchQuery}&limit=25`,
-        { signal: controller.signal }
-      );
-      const data = await res.json();
-      jobs = (data.jobs || []).map((j: any) => {
-        const loc = (j.candidate_required_location || "").toLowerCase();
-        // Determine if explicitly India-friendly
-        const indiaFriendly = loc.includes("india") || loc.includes("asia") || loc.includes("anywhere") || loc.includes("worldwide") || loc.includes("apac") || loc === "";
-        return {
-          title: j.title,
-          company: j.company_name,
-          location: indiaFriendly ? (j.candidate_required_location || "Remote") + " 🇮🇳" : j.candidate_required_location || "Remote",
-          type: j.job_type || "Full-time",
-          url: j.url,
-          description: j.description?.replace(/<[^>]*>/g, "").substring(0, 200) + "...",
-          salary: convertSalaryToINR(j.salary),
-          tags: j.tags || [],
-          published_at: j.publication_date,
-          company_logo: j.company_logo || null,
-          category: j.category || "Software Development",
-        };
+      // Fetch from multiple queries to maximize India results
+      const searches = [
+        `${query} india`,
+        query,
+      ];
+
+      const allJobs = new Map<string, any>();
+
+      for (const searchQuery of searches) {
+        const encoded = encodeURIComponent(searchQuery);
+        const res = await fetch(
+          `https://remotive.com/api/remote-jobs?search=${encoded}&limit=50`,
+          { signal: controller.signal }
+        );
+        const data = await res.json();
+        for (const j of (data.jobs || [])) {
+          if (!allJobs.has(j.id)) {
+            allJobs.set(j.id, j);
+          }
+        }
+      }
+
+      // Strictly filter: only India-located or worldwide/anywhere jobs
+      const indianCities = ["Bangalore", "Hyderabad", "Mumbai", "Delhi NCR", "Pune", "Chennai", "Kolkata", "Noida", "Gurugram"];
+
+      for (const j of allJobs.values()) {
+        const loc = j.candidate_required_location || "";
+        const explicitIndia = isIndiaJob(loc);
+        const openToIndia = isOpenToIndia(loc);
+
+        if (explicitIndia || openToIndia) {
+          // Assign a proper India location label
+          let displayLocation: string;
+          if (explicitIndia) {
+            displayLocation = loc; // already mentions India city
+          } else {
+            // For "anywhere"/"worldwide", label as Remote India
+            displayLocation = "Remote - India 🇮🇳";
+          }
+
+          jobs.push({
+            title: j.title,
+            company: j.company_name,
+            location: displayLocation.includes("🇮🇳") ? displayLocation : displayLocation + " 🇮🇳",
+            type: j.job_type || "Full-time",
+            url: j.url,
+            description: j.description?.replace(/<[^>]*>/g, "").substring(0, 200) + "...",
+            salary: convertSalaryToINR(j.salary),
+            tags: j.tags || [],
+            published_at: j.publication_date,
+            company_logo: j.company_logo || null,
+            category: j.category || "Software Development",
+          });
+        }
+      }
+
+      // Sort: explicit India jobs first, then worldwide
+      jobs.sort((a, b) => {
+        const aIndia = INDIA_KEYWORDS.some(kw => a.location.toLowerCase().includes(kw)) ? 0 : 1;
+        const bIndia = INDIA_KEYWORDS.some(kw => b.location.toLowerCase().includes(kw)) ? 0 : 1;
+        return aIndia - bIndia;
       });
+
+      // Cap at 30
+      jobs = jobs.slice(0, 30);
     } finally {
       clearTimeout(timeout);
     }
