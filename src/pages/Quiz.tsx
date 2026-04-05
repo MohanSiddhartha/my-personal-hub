@@ -126,6 +126,18 @@ const QuizPage = () => {
     resetQuiz();
   };
 
+  const addStack = (stack: string) => {
+    const trimmed = stack.trim();
+    if (trimmed && !selectedStacks.includes(trimmed)) {
+      setSelectedStacks((p) => [...p, trimmed]);
+    }
+    setCustomStack("");
+  };
+
+  const removeStack = (stack: string) => {
+    setSelectedStacks((p) => p.filter((s) => s !== stack));
+  };
+
   const resetQuiz = () => {
     setCurrentIndex(0);
     setSelected(null);
