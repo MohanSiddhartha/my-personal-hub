@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Brain, Clock, CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy, Loader2, RefreshCw } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Brain, Clock, CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy, Loader2, RefreshCw, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollReveal } from "@/components/ScrollReveal";
@@ -18,14 +18,15 @@ interface Question {
   explanation: string;
 }
 
-const CATEGORIES = ["All", "Angular", "React", "SQL", ".NET", "TypeScript", "Python", "System Design"];
+const POPULAR_STACKS = ["React", "Angular", "Vue", "Node.js", "Python", "Java", "SQL", ".NET", "TypeScript", "JavaScript", "Go", "Rust", "Docker", "Kubernetes", "AWS", "System Design", "Data Structures", "DevOps", "GraphQL", "MongoDB"];
 const DIFFICULTIES = ["all", "basic", "intermediate", "pro"] as const;
 const difficultyColors = { basic: "text-primary", intermediate: "text-amber", pro: "text-rose" };
 
 const QuizPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedStacks, setSelectedStacks] = useState<string[]>([]);
+  const [customStack, setCustomStack] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<typeof DIFFICULTIES[number]>("all");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -66,7 +67,7 @@ const QuizPage = () => {
     try {
       const { data, error } = await supabase.functions.invoke("generate-quiz", {
         body: {
-          category: selectedCategory,
+           category: selectedStacks.length > 0 ? selectedStacks.join(", ") : "All",
           difficulty: selectedDifficulty,
           count: 10,
         },
@@ -115,7 +116,7 @@ const QuizPage = () => {
     const finalScore = score + (selected === currentQ?.correct ? 1 : 0);
     await supabase.from("quiz_results").insert({
       user_id: user.id,
-      category: selectedCategory,
+      category: selectedStacks.length > 0 ? selectedStacks.join(", ") : "All",
       difficulty: selectedDifficulty,
       score: finalScore,
       total: questions.length,
@@ -123,6 +124,18 @@ const QuizPage = () => {
     toast({ title: "Quiz complete!", description: `Score: ${finalScore}/${questions.length}` });
     fetchResults();
     resetQuiz();
+  };
+
+  const addStack = (stack: string) => {
+    const trimmed = stack.trim();
+    if (trimmed && !selectedStacks.includes(trimmed)) {
+      setSelectedStacks((p) => [...p, trimmed]);
+    }
+    setCustomStack("");
+  };
+
+  const removeStack = (stack: string) => {
+    setSelectedStacks((p) => p.filter((s) => s !== stack));
   };
 
   const resetQuiz = () => {
@@ -149,11 +162,34 @@ const QuizPage = () => {
         <ScrollReveal delay={100}>
           <CyberCard glowColor="amber">
             <div className="space-y-5">
-              <div>
-                <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">Category</p>
-                <div className="flex gap-2 flex-wrap">
-                  {CATEGORIES.map((c) => (
-                    <Badge key={c} variant={selectedCategory === c ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedCategory(c)}>{c}</Badge>
+               <div>
+                <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">Select your stack(s)</p>
+                {selectedStacks.length > 0 && (
+                  <div className="flex gap-2 flex-wrap mb-3">
+                    {selectedStacks.map((s) => (
+                      <Badge key={s} variant="default" className="cursor-pointer gap-1 pr-1" onClick={() => removeStack(s)}>
+                        {s} <X className="h-3 w-3" />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={customStack}
+                    onChange={(e) => setCustomStack(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addStack(customStack); } }}
+                    placeholder="Type a technology (e.g. React, Django, Rust)..."
+                    className="flex-1 rounded-lg border border-border/30 bg-secondary/20 px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <Button variant="outline" size="sm" onClick={() => addStack(customStack)} disabled={!customStack.trim()}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">Popular picks:</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {POPULAR_STACKS.filter((s) => !selectedStacks.includes(s)).slice(0, 12).map((s) => (
+                    <Badge key={s} variant="outline" className="cursor-pointer text-xs" onClick={() => addStack(s)}>{s}</Badge>
                   ))}
                 </div>
               </div>
