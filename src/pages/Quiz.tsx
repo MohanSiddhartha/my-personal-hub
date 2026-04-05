@@ -67,7 +67,7 @@ const QuizPage = () => {
     try {
       const { data, error } = await supabase.functions.invoke("generate-quiz", {
         body: {
-          category: selectedCategory,
+           category: selectedStacks.length > 0 ? selectedStacks.join(", ") : "All",
           difficulty: selectedDifficulty,
           count: 10,
         },
