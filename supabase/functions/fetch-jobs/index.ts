@@ -1,20 +1,36 @@
 import { corsHeaders } from "../_shared/cors.ts";
 
+const INDIA_CITIES = [
+  "india", "bangalore", "bengaluru", "hyderabad", "mumbai", "delhi",
+  "pune", "chennai", "kolkata", "noida", "gurgaon", "gurugram",
+  "ahmedabad", "jaipur", "lucknow", "chandigarh", "kochi", "indore",
+  "nagpur", "thiruvananthapuram", "coimbatore", "vizag", "visakhapatnam",
+  "bhubaneswar", "mangalore", "mysore", "mysuru", "new delhi", "navi mumbai",
+  "thane", "ghaziabad", "faridabad",
+];
+
 const USD_TO_INR = 85;
 
-function formatSalaryINR(min?: number, max?: number, currency?: string): string | null {
-  if (!min && !max) return null;
-  let lo = min || 0;
-  let hi = max || lo;
-  // Convert USD to INR if needed
-  if (currency && currency.toUpperCase() === "USD") {
-    lo = lo * USD_TO_INR;
-    hi = hi * USD_TO_INR;
+function isStrictlyIndiaJob(location: string): boolean {
+  const loc = location.toLowerCase();
+  return INDIA_CITIES.some(city => loc.includes(city));
+}
+
+function convertSalaryToINR(salary: string | null): string | null {
+  if (!salary) return null;
+  const nums = salary.match(/[\d,]+/g);
+  if (!nums) return salary;
+  const parsed = nums.map((n: string) => parseInt(n.replace(/,/g, ""), 10)).filter((n: number) => !isNaN(n) && n > 0);
+  if (parsed.length === 0) return null;
+
+  // If values look like USD (< 500000), convert to INR
+  const isLikelyUSD = parsed[0] < 500000;
+  const multiplier = isLikelyUSD ? USD_TO_INR : 1;
+
+  if (parsed.length >= 2) {
+    return `₹${(parsed[0] * multiplier).toLocaleString("en-IN")} - ₹${(parsed[1] * multiplier).toLocaleString("en-IN")} /yr`;
   }
-  if (lo && hi && lo !== hi) {
-    return `₹${lo.toLocaleString("en-IN")} - ₹${hi.toLocaleString("en-IN")} /yr`;
-  }
-  return `₹${(hi || lo).toLocaleString("en-IN")} /yr`;
+  return `₹${(parsed[0] * multiplier).toLocaleString("en-IN")} /yr`;
 }
 
 Deno.serve(async (req) => {
@@ -25,18 +41,21 @@ Deno.serve(async (req) => {
   try {
     const { query = "software developer" } = await req.json();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
+    const timeout = setTimeout(() => controller.abort(), 15000);
 
     let jobs: any[] = [];
 
     try {
-      // Strategy 1: Try Remotive API (free, no key needed) with broader search
-      const remotiveJobs = await fetchRemotive(query, controller.signal);
-      jobs.push(...remotiveJobs);
+      // Fetch from multiple sources in parallel
+      const [remotiveJobs, himalayanJobs, jobicyJobs] = await Promise.allSettled([
+        fetchRemotive(query, controller.signal),
+        fetchHimalayas(query, controller.signal),
+        fetchJobicy(query, controller.signal),
+      ]);
 
-      // Strategy 2: Try Arbeitnow API (free, no key)
-      const arbeitnowJobs = await fetchArbeitnow(query, controller.signal);
-      jobs.push(...arbeitnowJobs);
+      if (remotiveJobs.status === "fulfilled") jobs.push(...remotiveJobs.value);
+      if (himalayanJobs.status === "fulfilled") jobs.push(...himalayanJobs.value);
+      if (jobicyJobs.status === "fulfilled") jobs.push(...jobicyJobs.value);
     } catch (e) {
       console.error("API fetch error:", e);
     } finally {
@@ -52,12 +71,18 @@ Deno.serve(async (req) => {
       return true;
     });
 
-    // If still no jobs, provide curated fallback data so the UI isn't empty
+    // Sort: explicit India city jobs first
+    jobs.sort((a, b) => {
+      const aIndia = isStrictlyIndiaJob(a.location) ? 0 : 1;
+      const bIndia = isStrictlyIndiaJob(b.location) ? 0 : 1;
+      return aIndia - bIndia;
+    });
+
+    // If no jobs found, use curated India fallback
     if (jobs.length === 0) {
       jobs = getFallbackJobs(query);
     }
 
-    // Cap at 40
     jobs = jobs.slice(0, 40);
 
     return new Response(JSON.stringify({ jobs }), {
@@ -72,6 +97,7 @@ Deno.serve(async (req) => {
   }
 });
 
+// Remotive API - filter strictly for India
 async function fetchRemotive(query: string, signal: AbortSignal): Promise<any[]> {
   const jobs: any[] = [];
   try {
@@ -79,23 +105,20 @@ async function fetchRemotive(query: string, signal: AbortSignal): Promise<any[]>
     const res = await fetch(`https://remotive.com/api/remote-jobs?search=${encoded}&limit=100`, { signal });
     const data = await res.json();
 
-    const INDIA_KEYWORDS = ["india", "bangalore", "bengaluru", "hyderabad", "mumbai", "delhi", "pune", "chennai", "kolkata", "noida", "gurgaon", "gurugram", "asia", "apac", "anywhere", "worldwide"];
-
     for (const j of (data.jobs || [])) {
       const loc = (j.candidate_required_location || "").toLowerCase();
-      const isRelevant = loc === "" || INDIA_KEYWORDS.some(kw => loc.includes(kw));
-      if (!isRelevant) continue;
-
-      const isExplicitIndia = ["india", "bangalore", "bengaluru", "hyderabad", "mumbai", "delhi", "pune", "chennai"].some(kw => loc.includes(kw));
+      
+      // STRICTLY India only - must mention India or an Indian city
+      if (!isStrictlyIndiaJob(loc) && !loc.includes("india")) continue;
 
       jobs.push({
         title: j.title,
         company: j.company_name,
-        location: isExplicitIndia ? j.candidate_required_location + " 🇮🇳" : "Remote - Open to India 🇮🇳",
+        location: j.candidate_required_location + " 🇮🇳",
         type: j.job_type || "Full-time",
         url: j.url,
         description: j.description?.replace(/<[^>]*>/g, "").substring(0, 200) + "...",
-        salary: convertSalaryString(j.salary),
+        salary: convertSalaryToINR(j.salary),
         tags: j.tags || [],
         published_at: j.publication_date,
         company_logo: j.company_logo || null,
@@ -108,49 +131,67 @@ async function fetchRemotive(query: string, signal: AbortSignal): Promise<any[]>
   return jobs;
 }
 
-function convertSalaryString(salary: string | null): string | null {
-  if (!salary) return null;
-  const nums = salary.match(/[\d,]+/g);
-  if (!nums) return salary;
-  const parsed = nums.map((n: string) => parseInt(n.replace(/,/g, ""), 10)).filter((n: number) => !isNaN(n) && n > 0);
-  if (parsed.length >= 2) {
-    return `₹${(parsed[0] * USD_TO_INR).toLocaleString("en-IN")} - ₹${(parsed[1] * USD_TO_INR).toLocaleString("en-IN")} /yr`;
-  } else if (parsed.length === 1) {
-    return `₹${(parsed[0] * USD_TO_INR).toLocaleString("en-IN")} /yr`;
-  }
-  return salary;
-}
-
-async function fetchArbeitnow(query: string, signal: AbortSignal): Promise<any[]> {
+// Himalayas.app API - remote jobs, filter for India
+async function fetchHimalayas(query: string, signal: AbortSignal): Promise<any[]> {
   const jobs: any[] = [];
   try {
     const encoded = encodeURIComponent(query);
-    const res = await fetch(`https://www.arbeitnow.com/api/job-board-api?search=${encoded}`, { signal });
+    const res = await fetch(`https://himalayas.app/jobs/api?q=${encoded}&limit=50`, { signal });
     const data = await res.json();
 
-    for (const j of (data.data || [])) {
+    for (const j of (data.jobs || [])) {
       const loc = (j.location || "").toLowerCase();
-      const remote = j.remote === true;
-      const isIndia = ["india", "bangalore", "bengaluru", "hyderabad", "mumbai", "delhi", "pune", "chennai"].some(kw => loc.includes(kw));
+      // STRICTLY India only
+      if (!isStrictlyIndiaJob(loc) && !loc.includes("india")) continue;
 
-      if (isIndia || remote) {
-        jobs.push({
-          title: j.title,
-          company: j.company_name,
-          location: isIndia ? j.location + " 🇮🇳" : "Remote - Open to India 🇮🇳",
-          type: remote ? "Remote" : "Full-time",
-          url: j.url,
-          description: (j.description || "").replace(/<[^>]*>/g, "").substring(0, 200) + "...",
-          salary: null,
-          tags: j.tags || [],
-          published_at: j.created_at,
-          company_logo: null,
-          category: "Software Development",
-        });
-      }
+      jobs.push({
+        title: j.title,
+        company: j.companyName || j.company_name || "Company",
+        location: (j.location || "India") + " 🇮🇳",
+        type: "Remote",
+        url: j.applicationUrl || j.url || `https://himalayas.app/jobs/${j.slug}`,
+        description: (j.excerpt || j.description || "").replace(/<[^>]*>/g, "").substring(0, 200) + "...",
+        salary: convertSalaryToINR(j.salary || null),
+        tags: j.categories || j.tags || [],
+        published_at: j.pubDate || j.publishedAt || new Date().toISOString(),
+        company_logo: j.companyLogo || null,
+        category: "Software Development",
+      });
     }
   } catch (e) {
-    console.error("Arbeitnow error:", e);
+    console.error("Himalayas error:", e);
+  }
+  return jobs;
+}
+
+// Jobicy API - remote jobs
+async function fetchJobicy(query: string, signal: AbortSignal): Promise<any[]> {
+  const jobs: any[] = [];
+  try {
+    const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?count=50&geo=india&tag=${encodeURIComponent(query)}`, { signal });
+    const data = await res.json();
+
+    for (const j of (data.jobs || [])) {
+      const loc = (j.jobGeo || "").toLowerCase();
+      // STRICTLY India only
+      if (!isStrictlyIndiaJob(loc) && !loc.includes("india")) continue;
+
+      jobs.push({
+        title: j.jobTitle,
+        company: j.companyName,
+        location: (j.jobGeo || "India") + " 🇮🇳",
+        type: j.jobType || "Remote",
+        url: j.url,
+        description: (j.jobExcerpt || "").replace(/<[^>]*>/g, "").substring(0, 200) + "...",
+        salary: convertSalaryToINR(j.annualSalaryMin && j.annualSalaryMax ? `${j.annualSalaryMin}-${j.annualSalaryMax}` : null),
+        tags: j.jobIndustry ? [j.jobIndustry] : [],
+        published_at: j.pubDate || new Date().toISOString(),
+        company_logo: j.companyLogo || null,
+        category: j.jobIndustry?.[0] || "Software Development",
+      });
+    }
+  } catch (e) {
+    console.error("Jobicy error:", e);
   }
   return jobs;
 }
@@ -170,12 +211,16 @@ function getFallbackJobs(query: string): any[] {
     { title: "Cloud Engineer", company: "Infosys", location: "Pune, India 🇮🇳", type: "Full-time", salary: "₹10,00,000 - ₹20,00,000 /yr", tags: ["Azure", "Terraform", "CI/CD"], category: "DevOps" },
     { title: "Senior Software Engineer", company: "Freshworks", location: "Chennai, India 🇮🇳", type: "Full-time", salary: "₹20,00,000 - ₹42,00,000 /yr", tags: ["Ruby", "React", "PostgreSQL"], category: "Full Stack" },
     { title: "ML Engineer", company: "Ola", location: "Bangalore, India 🇮🇳", type: "Full-time", salary: "₹22,00,000 - ₹45,00,000 /yr", tags: ["Python", "PyTorch", "MLOps"], category: "AI/ML" },
-    { title: "QA Automation Engineer", company: "Wipro", location: "Hyderabad, India 🇮🇳", type: "Full-time", salary: "₹8,00,000 - ₹16,00,000 /yr", tags: ["Selenium", "Java", "CI/CD"], category: "QA" },
     { title: "Product Engineer", company: "Postman", location: "Bangalore, India 🇮🇳", type: "Hybrid", salary: "₹24,00,000 - ₹48,00,000 /yr", tags: ["TypeScript", "Node.js", "APIs"], category: "Full Stack" },
     { title: "Staff Engineer", company: "Atlassian India", location: "Bangalore, India 🇮🇳", type: "Hybrid", salary: "₹40,00,000 - ₹75,00,000 /yr", tags: ["Java", "React", "Microservices"], category: "Full Stack" },
+    { title: "Software Engineer", company: "Google India", location: "Hyderabad, India 🇮🇳", type: "Full-time", salary: "₹30,00,000 - ₹60,00,000 /yr", tags: ["C++", "Python", "Distributed Systems"], category: "Full Stack" },
+    { title: "Backend Engineer", company: "Zomato", location: "Gurugram, India 🇮🇳", type: "Full-time", salary: "₹18,00,000 - ₹35,00,000 /yr", tags: ["Go", "Kafka", "Redis"], category: "Backend" },
+    { title: "iOS Developer", company: "Dream11", location: "Mumbai, India 🇮🇳", type: "Full-time", salary: "₹20,00,000 - ₹40,00,000 /yr", tags: ["Swift", "iOS", "UIKit"], category: "Mobile" },
+    { title: "Platform Engineer", company: "Meesho", location: "Bangalore, India 🇮🇳", type: "Full-time", salary: "₹16,00,000 - ₹32,00,000 /yr", tags: ["Kubernetes", "AWS", "Go"], category: "DevOps" },
+    { title: "Frontend Developer", company: "Groww", location: "Bangalore, India 🇮🇳", type: "Full-time", salary: "₹15,00,000 - ₹30,00,000 /yr", tags: ["React", "JavaScript", "CSS"], category: "Frontend" },
+    { title: "Data Engineer", company: "Walmart India", location: "Bangalore, India 🇮🇳", type: "Full-time", salary: "₹22,00,000 - ₹45,00,000 /yr", tags: ["Spark", "Python", "Hadoop"], category: "Data" },
   ];
 
-  // Filter by query relevance
   const filtered = baseJobs.filter(j => {
     const searchable = `${j.title} ${j.tags.join(" ")} ${j.category}`.toLowerCase();
     return q.split(" ").some(word => searchable.includes(word));

@@ -69,6 +69,9 @@ const Dashboard = () => {
             Welcome back to <span className="text-gradient-primary font-semibold">SIRA</span>
             <span className="inline-block w-[2px] h-5 bg-primary ml-1 align-middle" style={{ animation: "typing-cursor 1s step-end infinite" }} />
           </p>
+          <p className="text-xs font-mono text-muted-foreground/40 tracking-[0.2em] uppercase mt-1">
+            Sid's Intelligent Resource Assistant
+          </p>
         </div>
       </ScrollReveal>
 
