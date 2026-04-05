@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Brain, Clock, CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy, Loader2, RefreshCw } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Brain, Clock, CheckCircle2, XCircle, RotateCcw, ChevronRight, Trophy, Loader2, RefreshCw, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollReveal } from "@/components/ScrollReveal";
