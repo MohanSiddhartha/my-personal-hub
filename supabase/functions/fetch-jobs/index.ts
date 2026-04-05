@@ -141,19 +141,13 @@ async function fetchHimalayas(query: string, signal: AbortSignal): Promise<any[]
 
     for (const j of (data.jobs || [])) {
       const loc = (j.location || "").toLowerCase();
-      const isIndiaExplicit = INDIA_CITIES.some(city => loc.includes(city));
-      const isGlobal = ["anywhere", "worldwide", "global", "remote"].some(kw => loc.includes(kw)) || loc === "";
-
-      if (!isIndiaExplicit && !isGlobal) continue;
-
-      const locationLabel = isIndiaExplicit
-        ? j.location + " 🇮🇳"
-        : "Remote (Worldwide) 🇮🇳";
+      // STRICTLY India only
+      if (!isStrictlyIndiaJob(loc) && !loc.includes("india")) continue;
 
       jobs.push({
         title: j.title,
         company: j.companyName || j.company_name || "Company",
-        location: locationLabel,
+        location: (j.location || "India") + " 🇮🇳",
         type: "Remote",
         url: j.applicationUrl || j.url || `https://himalayas.app/jobs/${j.slug}`,
         description: (j.excerpt || j.description || "").replace(/<[^>]*>/g, "").substring(0, 200) + "...",
