@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +16,19 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Handle OAuth session on mount
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) {
+          navigate("/");
+        }
+      }
+    );
+
+    return () => subscription?.unsubscribe();
+  }, [navigate]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +50,7 @@ const AuthPage = () => {
           description: "We sent you a verification link. Please confirm your email.",
         });
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -46,11 +59,23 @@ const AuthPage = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (error) {
-      toast({ title: "Error", description: String(error), variant: "destructive" });
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "An error occurred";
+      toast({ title: "Error", description: errorMessage, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -67,7 +92,7 @@ const AuthPage = () => {
           <GlitchText className="text-3xl font-display font-bold tracking-wider" as="h1">
             SIRA
           </GlitchText>
-          <p className="text-muted-foreground mt-2 text-sm">
+          <p className="text-[10px] font-mono text-muted-foreground/60 tracking-[0.15em] uppercase leading-tight mt-2">
             {isLogin ? "Sid's Intelligent Resource Assistant" : "Initialize your vault"}
           </p>
         </div>
