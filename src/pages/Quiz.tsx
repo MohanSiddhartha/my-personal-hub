@@ -116,7 +116,7 @@ const QuizPage = () => {
     const finalScore = score + (selected === currentQ?.correct ? 1 : 0);
     await supabase.from("quiz_results").insert({
       user_id: user.id,
-      category: selectedCategory,
+      category: selectedStacks.length > 0 ? selectedStacks.join(", ") : "All",
       difficulty: selectedDifficulty,
       score: finalScore,
       total: questions.length,
