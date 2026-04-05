@@ -108,21 +108,13 @@ async function fetchRemotive(query: string, signal: AbortSignal): Promise<any[]>
     for (const j of (data.jobs || [])) {
       const loc = (j.candidate_required_location || "").toLowerCase();
       
-      // Only include jobs explicitly mentioning India or Indian cities
-      const isIndiaExplicit = INDIA_CITIES.some(city => loc.includes(city));
-      // Also include "anywhere" / "worldwide" jobs as they're open to India
-      const isGlobal = ["anywhere", "worldwide", "global"].some(kw => loc.includes(kw)) || loc === "";
-      
-      if (!isIndiaExplicit && !isGlobal) continue;
-
-      const locationLabel = isIndiaExplicit
-        ? j.candidate_required_location + " 🇮🇳"
-        : "Remote (Worldwide) 🇮🇳";
+      // STRICTLY India only - must mention India or an Indian city
+      if (!isStrictlyIndiaJob(loc) && !loc.includes("india")) continue;
 
       jobs.push({
         title: j.title,
         company: j.company_name,
-        location: locationLabel,
+        location: j.candidate_required_location + " 🇮🇳",
         type: j.job_type || "Full-time",
         url: j.url,
         description: j.description?.replace(/<[^>]*>/g, "").substring(0, 200) + "...",
