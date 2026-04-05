@@ -162,11 +162,34 @@ const QuizPage = () => {
         <ScrollReveal delay={100}>
           <CyberCard glowColor="amber">
             <div className="space-y-5">
-              <div>
-                <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">Category</p>
-                <div className="flex gap-2 flex-wrap">
-                  {CATEGORIES.map((c) => (
-                    <Badge key={c} variant={selectedCategory === c ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedCategory(c)}>{c}</Badge>
+               <div>
+                <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">Select your stack(s)</p>
+                {selectedStacks.length > 0 && (
+                  <div className="flex gap-2 flex-wrap mb-3">
+                    {selectedStacks.map((s) => (
+                      <Badge key={s} variant="default" className="cursor-pointer gap-1 pr-1" onClick={() => removeStack(s)}>
+                        {s} <X className="h-3 w-3" />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={customStack}
+                    onChange={(e) => setCustomStack(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addStack(customStack); } }}
+                    placeholder="Type a technology (e.g. React, Django, Rust)..."
+                    className="flex-1 rounded-lg border border-border/30 bg-secondary/20 px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <Button variant="outline" size="sm" onClick={() => addStack(customStack)} disabled={!customStack.trim()}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">Popular picks:</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {POPULAR_STACKS.filter((s) => !selectedStacks.includes(s)).slice(0, 12).map((s) => (
+                    <Badge key={s} variant="outline" className="cursor-pointer text-xs" onClick={() => addStack(s)}>{s}</Badge>
                   ))}
                 </div>
               </div>
