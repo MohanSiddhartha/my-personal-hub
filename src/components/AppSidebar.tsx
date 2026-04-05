@@ -67,9 +67,14 @@ export function AppSidebar() {
             </div>
           </div>
           {!collapsed && (
-            <span className="text-lg font-display font-bold tracking-wider text-gradient-primary">
-              SIRA
-            </span>
+            <div className="flex flex-col">
+              <span className="text-lg font-display font-bold tracking-wider text-gradient-primary">
+                SIRA
+              </span>
+              <span className="text-[8px] font-mono text-muted-foreground/50 tracking-[0.15em] uppercase leading-tight">
+                Sid's Intelligent Resource Assistant
+              </span>
+            </div>
           )}
         </div>
       </SidebarHeader>
