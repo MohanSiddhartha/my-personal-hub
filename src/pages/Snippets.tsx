@@ -10,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-const LANGUAGES = ["Angular", "TypeScript", "C#", ".NET", "SQL", "HTML/CSS", "JavaScript", "Python"];
+const LANGUAGES = ["Python", "C#", "HTML", "CSS", "JavaScript", "TypeScript", "Angular", "Java"];
+const SNIPPET_TAGS = ["Data Engineering", "Data Science", "Gen AI", "SQL", "API", "Utility", "Algorithm", "Pattern"];
 
 interface Snippet {
   id: string;
@@ -28,6 +29,7 @@ const SnippetsPage = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedLang, setSelectedLang] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [newSnippet, setNewSnippet] = useState({ title: "", code: "", language: "TypeScript", tags: "", description: "" });
 
@@ -83,7 +85,8 @@ const SnippetsPage = () => {
   const filtered = snippets.filter((s) => {
     const matchSearch = !search || s.title.toLowerCase().includes(search.toLowerCase()) || s.code.toLowerCase().includes(search.toLowerCase());
     const matchLang = !selectedLang || s.language === selectedLang.toLowerCase();
-    return matchSearch && matchLang;
+    const matchTag = !selectedTag || s.tags.some(tag => tag.toLowerCase() === selectedTag.toLowerCase());
+    return matchSearch && matchLang && matchTag;
   });
 
   return (
@@ -91,8 +94,8 @@ const SnippetsPage = () => {
       <ScrollReveal>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Code Snippets</h1>
-            <p className="text-sm text-muted-foreground font-mono">{snippets.length} snippets</p>
+            <h1 className="text-2xl font-bold tracking-tight">Code Snippets Library</h1>
+            <p className="text-sm text-muted-foreground font-mono">Reusable code solutions • {LANGUAGES.length} languages • {snippets.length} snippets</p>
           </div>
           <Button variant="glow" onClick={() => setIsCreating(true)}>
             <Plus className="h-4 w-4" /> New Snippet
@@ -101,17 +104,30 @@ const SnippetsPage = () => {
       </ScrollReveal>
 
       <ScrollReveal delay={80}>
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search snippets..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-card/60 border-border/30" />
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {LANGUAGES.map((lang) => (
-              <Badge key={lang} variant={selectedLang === lang ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedLang(selectedLang === lang ? null : lang)}>
-                {lang}
-              </Badge>
-            ))}
+          <div>
+            <p className="text-xs text-muted-foreground font-mono mb-2">LANGUAGES:</p>
+            <div className="flex gap-2 flex-wrap">
+              {LANGUAGES.map((lang) => (
+                <Badge key={lang} variant={selectedLang === lang ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedLang(selectedLang === lang ? null : lang)}>
+                  {lang}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground font-mono mb-2">TAGS:</p>
+            <div className="flex gap-2 flex-wrap">
+              {SNIPPET_TAGS.map((tag) => (
+                <Badge key={tag} variant={selectedTag === tag ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}>
+                  {tag}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
       </ScrollReveal>
@@ -120,11 +136,37 @@ const SnippetsPage = () => {
         <div className="rounded-xl border border-primary/30 bg-card/60 backdrop-blur-sm p-5 space-y-3 glow-primary">
           <Input placeholder="Snippet title" value={newSnippet.title} onChange={(e) => setNewSnippet((p) => ({ ...p, title: e.target.value }))} className="bg-secondary/50 border-border/30" />
           <Textarea placeholder="Paste your code here..." value={newSnippet.code} onChange={(e) => setNewSnippet((p) => ({ ...p, code: e.target.value }))} className="bg-secondary/50 border-border/30 min-h-[150px] font-mono text-sm" />
-          <div className="flex gap-3">
-            <Input placeholder="Tags (comma separated)" value={newSnippet.tags} onChange={(e) => setNewSnippet((p) => ({ ...p, tags: e.target.value }))} className="bg-secondary/50 border-border/30 flex-1" />
-            <select value={newSnippet.language} onChange={(e) => setNewSnippet((p) => ({ ...p, language: e.target.value }))} className="rounded-md bg-secondary/50 border border-border/30 px-3 text-sm text-foreground">
-              {LANGUAGES.map((l) => (<option key={l} value={l}>{l}</option>))}
-            </select>
+          <select value={newSnippet.language} onChange={(e) => setNewSnippet((p) => ({ ...p, language: e.target.value }))} className="rounded-md bg-secondary/50 border border-border/30 px-3 text-sm text-foreground">
+            {LANGUAGES.map((l) => (<option key={l} value={l}>{l}</option>))}
+          </select>
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground font-mono">Quick Select Tags:</p>
+            <div className="flex gap-2 flex-wrap">
+              {SNIPPET_TAGS.map((tag) => {
+                const currentTags = newSnippet.tags ? newSnippet.tags.split(",").map((t) => t.trim()) : [];
+                const isSelected = currentTags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => {
+                      if (isSelected) {
+                        setNewSnippet((p) => ({ ...p, tags: currentTags.filter((t) => t !== tag).join(", ") }));
+                      } else {
+                        setNewSnippet((p) => ({ ...p, tags: [...currentTags, tag].join(", ") }));
+                      }
+                    }}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+            <Input placeholder="Or add custom tags (comma separated)" value={newSnippet.tags} onChange={(e) => setNewSnippet((p) => ({ ...p, tags: e.target.value }))} className="bg-secondary/50 border-border/30 text-sm" />
           </div>
           <div className="flex gap-2 justify-end">
             <Button variant="ghost" onClick={() => setIsCreating(false)}>Cancel</Button>

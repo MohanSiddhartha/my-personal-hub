@@ -1,67 +1,54 @@
-import { corsHeaders } from "../_shared/cors.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const GNEWS_BASE = "https://gnews.io/api/v4";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+interface NewsArticle {
+  title: string;
+  description: string | null;
+  content: string | null;
+  source: { name: string };
+  publishedAt: string;
+  url: string;
+}
+
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { category = "technology" } = await req.json();
-    const apiKey = Deno.env.get("GNEWS_API_KEY");
-    let articles = [];
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
-    try {
-      if (apiKey) {
-        const url = `${GNEWS_BASE}/top-headlines?category=${category}&lang=en&country=in&max=12&apikey=${apiKey}`;
-        const res = await fetch(url, { signal: controller.signal });
-        const data = await res.json();
-        articles = (data.articles || []).map((a: any) => ({
-          title: a.title,
-          description: a.description,
-          url: a.url,
-          source: a.source?.name || "Unknown",
-          image_url: a.image,
-          published_at: a.publishedAt,
-        }));
-      } else {
-        const tags = ["technology", "webdev", "programming", "ai", "javascript", "react", "typescript"];
-        const randomTag = tags[Math.floor(Math.random() * tags.length)];
-        const page = Math.floor(Math.random() * 3) + 1;
-        const res = await fetch(
-          `https://dev.to/api/articles?per_page=12&page=${page}&tag=${randomTag}&top=7`,
-          { signal: controller.signal }
-        );
-        const data = await res.json();
-        articles = (data || []).map((a: any) => ({
-          title: a.title,
-          description: a.description,
-          url: a.url,
-          source: a.organization?.name || a.user?.name || "Dev.to",
-          image_url: a.cover_image || a.social_image,
-          published_at: a.published_at,
-          reading_time: a.reading_time_minutes,
-          tags: a.tag_list || [],
-          reactions: a.positive_reactions_count || 0,
-          comments: a.comments_count || 0,
-        }));
-      }
-    } finally {
-      clearTimeout(timeout);
-    }
+    const { topic = "technology" } = await req.json() as Record<string, unknown>;
+    
+    // Using NewsAPI free tier - 100 requests/day free
+    const url = `https://newsapi.org/v2/everything?q=${topic}&sortBy=publishedAt&language=en&pageSize=5`;
+    
+    const headers: Record<string, string> = {
+      "User-Agent": "supabase-edge-function",
+    };
+    
+    const response = await fetch(url, { headers });
+    if (!response.ok) throw new Error("Failed to fetch news");
+    
+    const data = await response.json() as { articles: NewsArticle[] };
+    
+    const articles = (data.articles || []).slice(0, 5).map((article: NewsArticle) => ({
+      title: article.title,
+      summary: article.description || article.content?.substring(0, 150) || "No summary available",
+      source: article.source.name,
+      date: new Date(article.publishedAt).toISOString().split('T')[0],
+      url: article.url,
+    }));
 
     return new Response(JSON.stringify({ articles }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=300" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
-    console.error("Error fetching news:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to fetch news", articles: [] }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : "Unknown error";
+    console.error("fetch-news error:", errorMsg);
+    return new Response(JSON.stringify({ error: errorMsg }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

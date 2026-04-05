@@ -29,8 +29,8 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
-  useSidebar,
 } from "@/components/ui/sidebar";
+import { useSidebar } from "@/components/ui/use-sidebar";
 
 const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, color: "text-primary" },
