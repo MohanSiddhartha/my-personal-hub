@@ -13,7 +13,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const catPrompt = category && category !== "All" ? `Category: ${category}` : "Categories: Angular, React, SQL, .NET, TypeScript, JavaScript, Python, System Design, DevOps, Data Structures";
+    const catPrompt = category && category !== "All" ? `Technologies/Topics: ${category}. Generate questions specifically about these technologies.` : "Categories: Angular, React, SQL, .NET, TypeScript, JavaScript, Python, System Design, DevOps, Data Structures";
     const diffPrompt = difficulty && difficulty !== "all" ? `Difficulty: ${difficulty}` : "Mix of basic, intermediate, and pro difficulty";
     const numQ = count || 10;
 
