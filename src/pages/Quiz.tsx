@@ -18,7 +18,7 @@ interface Question {
   explanation: string;
 }
 
-const CATEGORIES = ["All", "Angular", "React", "SQL", ".NET", "TypeScript", "Python", "System Design"];
+const POPULAR_STACKS = ["React", "Angular", "Vue", "Node.js", "Python", "Java", "SQL", ".NET", "TypeScript", "JavaScript", "Go", "Rust", "Docker", "Kubernetes", "AWS", "System Design", "Data Structures", "DevOps", "GraphQL", "MongoDB"];
 const DIFFICULTIES = ["all", "basic", "intermediate", "pro"] as const;
 const difficultyColors = { basic: "text-primary", intermediate: "text-amber", pro: "text-rose" };
 
