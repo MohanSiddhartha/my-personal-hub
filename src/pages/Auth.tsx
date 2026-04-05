@@ -65,10 +65,10 @@ const AuthPage = () => {
             <Terminal className="h-8 w-8 text-primary" style={{ animation: "float 6s ease-in-out infinite" }} />
           </div>
           <GlitchText className="text-3xl font-display font-bold tracking-wider" as="h1">
-            DEVVAULT
+            SIRA
           </GlitchText>
           <p className="text-muted-foreground mt-2 text-sm">
-            {isLogin ? "Welcome back, commander" : "Initialize your vault"}
+            {isLogin ? "Sid's Intelligent Resource Assistant" : "Initialize your vault"}
           </p>
         </div>
 
