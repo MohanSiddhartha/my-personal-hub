@@ -25,7 +25,8 @@ const difficultyColors = { basic: "text-primary", intermediate: "text-amber", pr
 const QuizPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedStacks, setSelectedStacks] = useState<string[]>([]);
+  const [customStack, setCustomStack] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<typeof DIFFICULTIES[number]>("all");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
