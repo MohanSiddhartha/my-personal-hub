@@ -168,24 +168,18 @@ async function fetchHimalayas(query: string, signal: AbortSignal): Promise<any[]
 async function fetchJobicy(query: string, signal: AbortSignal): Promise<any[]> {
   const jobs: any[] = [];
   try {
-    const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?count=50&tag=${encodeURIComponent(query)}`, { signal });
+    const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?count=50&geo=india&tag=${encodeURIComponent(query)}`, { signal });
     const data = await res.json();
 
     for (const j of (data.jobs || [])) {
       const loc = (j.jobGeo || "").toLowerCase();
-      const isIndiaExplicit = INDIA_CITIES.some(city => loc.includes(city));
-      const isGlobal = ["anywhere", "worldwide", "global"].some(kw => loc.includes(kw)) || loc === "";
-
-      if (!isIndiaExplicit && !isGlobal) continue;
-
-      const locationLabel = isIndiaExplicit
-        ? j.jobGeo + " 🇮🇳"
-        : "Remote (Worldwide) 🇮🇳";
+      // STRICTLY India only
+      if (!isStrictlyIndiaJob(loc) && !loc.includes("india")) continue;
 
       jobs.push({
         title: j.jobTitle,
         company: j.companyName,
-        location: locationLabel,
+        location: (j.jobGeo || "India") + " 🇮🇳",
         type: j.jobType || "Remote",
         url: j.url,
         description: (j.jobExcerpt || "").replace(/<[^>]*>/g, "").substring(0, 200) + "...",
